@@ -1,0 +1,13 @@
+.cached_img {
+	display: inline-block;
+}
+
+.cached_img .infobox {
+	display: block;
+	margin: 0;
+	padding: 0;
+	background-image: none;
+	font-size: 0.8em;
+	line-height: 1.5em;
+	text-align: center;
+}
