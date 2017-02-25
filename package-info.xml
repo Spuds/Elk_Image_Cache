@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE package-info SYSTEM "http://www.elkarte.net/site/package-info">
+<package-info xmlns="http://www.elkarte.net/site/package-info" xmlns:elk="http://www.elkarte.net/">
+	<name>ImageCache</name>
+	<id>spuds:imagecache</id>
+	<type>addon</type>
+	<version>1.0</version>
+
+	<install for="1.1 - 1.1.99">
+		<require-file name="imagecache.php" destination="BOARDDIR" />
+		<require-dir name="modules" destination="SOURCEDIR" />
+		<require-dir name="admin" destination="SOURCEDIR" />
+		<require-dir name="subs" destination="SOURCEDIR" />
+		<require-dir name="themes" destination="BOARDDIR" />
+		<database type="file">install.php</database>
+		<redirect url="index.php?action=admin;area=corefeatures" timeout="5000">redirect.txt</redirect>
+	</install>
+
+	<uninstall for="1.1 - 1.1.99">
+		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
+		<remove-file name="SOURCEDIR/modules/ImageCache/ImageCacheAdminModule.class.php" />
+		<remove-file name="SUBSDIR/ScheduledTask/RemoveOldImageCache.php" />
+		<remove-file name="SUBSDIR/ImageCache.class.php" />
+		<remove-file name="SUBSDIR/ImageCache.integrate.php" />
+		<remove-file name="BOARDDIR/imagecache.php" />
+		<remove-file name="LANGUAGEDIR/english/ImageCache.english.php" />
+	</uninstall>
+
+</package-info>
