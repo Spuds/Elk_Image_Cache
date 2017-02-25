@@ -4,11 +4,14 @@
  * Simple proxy to output a cached image.  Primarily intended to allow
  * viewing of http images on a https/ssl enabled ElkArte site
  *
- * @name      ElkArte Forum
- * @copyright ElkArte Forum contributors
- * @license   BSD http://opensource.org/licenses/BSD-3-Clause
+ * @name ImageCache
+ * @author Spuds
+ * @copyright (c) 2017 Spuds
+ * @license This Source Code is subject to the terms of the Mozilla Public License
+ * version 1.1 (the "License"). You can obtain a copy of the License at
+ * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.1 beta 4
+ * @version 1.0.0
  *
  */
 
@@ -19,7 +22,7 @@ const ELK = 'SSI';
  */
 class Elk_Proxy
 {
-	/** @var bool If they need to over ride the refer check */
+	/** @var bool If they need to bypass the refer check */
 	public $_overrideReferrer = false;
 	/** @var HttpReq Holds instance of HttpReq object */
 	protected $_req;

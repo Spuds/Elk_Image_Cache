@@ -1,5 +1,5 @@
 <?php
-// Version: 1.1; image cache
+// Version: 1.0.0; image cache
 
 $txt['image_cache_warn_ext'] = 'External image, click here to view original';
 $txt['image_cache_title'] = 'Image Cache Settings';

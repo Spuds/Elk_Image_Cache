@@ -1,21 +1,28 @@
 <?php
 
 /**
- * Provides a simple image cache, intended for serving http images over https
+ * Provides a simple image cache, intended for serving http images over https.
  *
- * @name      ElkArte Forum
- * @copyright ElkArte Forum contributors
- * @license   BSD http://opensource.org/licenses/BSD-3-Clause
+ * For proper auto detection, this file must be located in SUBSDIR and
+ * follow naming conventions XxxYYY.integrate => Xxx_Yyy_Integrate
  *
- * @version 1.1 beta 4
+ * @name ImageCache
+ * @author Spuds
+ * @copyright (c) 2017 Spuds
+ * @license This Source Code is subject to the terms of the Mozilla Public License
+ * version 1.1 (the "License"). You can obtain a copy of the License at
+ * http://mozilla.org/MPL/1.1/.
+ *
+ * @version 1.0.0
  *
  */
 
 /**
  * Class Image_Cache_Integrate
  *
- * - For proper auto detection, this file must be located in SUBSDIR and named as xxx.integrate
+ * - For proper auto detection, this file must be located in SUBSDIR and named xxx.integrate
  * - The class must be xxx_Integrate
+ * - collection of static methods
  */
 class Image_Cache_Integrate
 {
@@ -48,7 +55,7 @@ class Image_Cache_Integrate
 	 * Register ACP hooks for setting values in various areas
 	 *
 	 * - settingsRegister method is called statically from loadIntegrationsSettings in Hooks.class
-	 * - used here to add ACP interface to the image cache
+	 * - used here to add ACP maintenance functions for the image cache
 	 *
 	 * @return array
 	 */
@@ -65,6 +72,8 @@ class Image_Cache_Integrate
 
 	/**
 	 * Determines if the image would require cache usage
+	 *
+	 * - Used by the updated BBC img codes added by integrate_additional_bbc
 	 *
 	 * @return Closure
 	 */
@@ -144,18 +153,23 @@ class Image_Cache_Integrate
 				\BBC\Codes::ATTR_TAG => 'img',
 				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
 				\BBC\Codes::ATTR_PARAM => array(
-					'alt' => array(
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-					),
 					'width' => array(
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-						\BBC\Codes::PARAM_ATTR_VALUE => 'max-width:$1px;',
+						\BBC\Codes::PARAM_ATTR_VALUE => 'width:100%;max-width:$1px;',
 						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
+						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 					'height' => array(
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
 						\BBC\Codes::PARAM_ATTR_VALUE => 'max-height:$1px;',
 						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
+						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+					),
+					'title' => array(
+						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
+						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+					),
+					'alt' => array(
+						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
+						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 				),
 				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',

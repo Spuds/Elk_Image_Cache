@@ -1,12 +1,20 @@
 <?php
 
 /**
+ * Admin interface to the image proxy cache.
  *
- * @name      ElkArte Forum
- * @copyright ElkArte Forum contributors
- * @license   BSD http://opensource.org/licenses/BSD-3-Clause
+ * The naming here is important, it must follow Manage*Module.controller.php for
+ * it to be discovered by the system and have its static addCoreFeature method
+ * called to add it to the core features.
  *
- * @version 1.1 beta 4
+ * @name ImageCache
+ * @author Spuds
+ * @copyright (c) 2017 Spuds
+ * @license This Source Code is subject to the terms of the Mozilla Public License
+ * version 1.1 (the "License"). You can obtain a copy of the License at
+ * http://mozilla.org/MPL/1.1/.
+ *
+ * @version 1.0.0
  *
  */
 
@@ -94,8 +102,10 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	}
 
 	/**
-	 * Adds or removes the scheduled task from the system.  Adds when teh
+	 * Adds or removes the scheduled task from the system.  Adds when the
 	 * module is enabled and removes it when it is disabled.
+	 *
+	 * This must be a static method as it is called from static addCoreFeature method
 	 *
 	 * @param string $action 'add' to activate the task
 	 */

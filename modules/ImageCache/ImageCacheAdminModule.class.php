@@ -1,12 +1,19 @@
 <?php
 
 /**
+ * Adds the image cache admin menu when its core feature is enabled.
  *
- * @name      ElkArte Forum
- * @copyright ElkArte Forum contributors
- * @license   BSD http://opensource.org/licenses/BSD-3-Clause
+ * All modules under the SUBSDIR/modules directory are discovered by the system
+ * and their static hooks method called.
  *
- * @version 1.1 dev
+ * @name ImageCache
+ * @author Spuds
+ * @copyright (c) 2017 Spuds
+ * @license This Source Code is subject to the terms of the Mozilla Public License
+ * version 1.1 (the "License"). You can obtain a copy of the License at
+ * http://mozilla.org/MPL/1.1/.
+ *
+ * @version 1.0.0
  *
  */
 
@@ -15,13 +22,15 @@
  *
  * - Adds the image cache admin menu when its core feature is enabled
  * - All modules under the modules directory are discovered by the system
- * and their hooks method is called.
+ * and their static hooks method is called.
  */
 class ImageCache_Admin_Module implements ElkArte\sources\modules\Module_Interface
 {
 	/**
 	 * The method called by the EventManager to find out which trigger the
 	 * module is attached to and which parameters the listener wants to receive.
+	 *
+	 * Here we add a menu item and admin search capability
 	 *
 	 * @param \Event_Manager $eventsManager an instance of the event manager
 	 *
