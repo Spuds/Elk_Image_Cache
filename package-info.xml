@@ -17,6 +17,8 @@
 	</install>
 
 	<uninstall for="1.1 RC1 - 1.1.99">
+		<hook reverse="true" hook="autoload_integrate" function="Image_Cache_Integrate" />
+		<code type="file">uninstall.php</code>
 		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
 		<remove-file name="SOURCEDIR/modules/ImageCache/ImageCacheAdminModule.class.php" />
 		<remove-file name="SUBSDIR/ScheduledTask/RemoveOldImageCache.php" />
@@ -24,6 +26,9 @@
 		<remove-file name="SUBSDIR/ImageCache.integrate.php" />
 		<remove-file name="BOARDDIR/imagecache.php" />
 		<remove-file name="LANGUAGEDIR/english/ImageCache.english.php" />
+		<remove-file name="THEMEDIR/css/imagecache.css" />
+		<remove-file name="THEMEDIR/scripts/imagecache.js" />
+		<remove-file name="THEMEDIR/images/admin/feature_ic.png" />
 	</uninstall>
 
 </package-info>

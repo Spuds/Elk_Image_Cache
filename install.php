@@ -20,7 +20,6 @@ elseif (!defined('ELK')) // If we are outside ELK and can't find SSI.php, then t
 
 global $db_prefix, $db_package_log;
 
-
 // Create the image_cache table
 $dbtbl = db_table();
 $dbtbl->db_create_table($db_prefix . 'image_cache',
