@@ -6,17 +6,17 @@
 	<type>addon</type>
 	<version>1.0</version>
 
-	<install for="1.1 - 1.1.99">
-		<require-file name="imagecache.php" destination="BOARDDIR" />
-		<require-dir name="modules" destination="SOURCEDIR" />
-		<require-dir name="admin" destination="SOURCEDIR" />
-		<require-dir name="subs" destination="SOURCEDIR" />
-		<require-dir name="themes" destination="BOARDDIR" />
+	<install for="1.1 RC1 - 1.1.99">
+		<require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
+		<require-dir name="modules" destination="SOURCEDIR">Core feature interface</require-dir>
+		<require-dir name="admin" destination="SOURCEDIR">Admin panel controllers</require-dir>
+		<require-dir name="subs" destination="SOURCEDIR">Helpers</require-dir>
+		<require-dir name="themes" destination="BOARDDIR">Templates, CSS, Language</require-dir>
 		<database type="file">install.php</database>
 		<redirect url="index.php?action=admin;area=corefeatures" timeout="5000">redirect.txt</redirect>
 	</install>
 
-	<uninstall for="1.1 - 1.1.99">
+	<uninstall for="1.1 RC1 - 1.1.99">
 		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
 		<remove-file name="SOURCEDIR/modules/ImageCache/ImageCacheAdminModule.class.php" />
 		<remove-file name="SUBSDIR/ScheduledTask/RemoveOldImageCache.php" />
