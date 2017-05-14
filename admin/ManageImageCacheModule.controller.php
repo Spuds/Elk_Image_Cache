@@ -3,10 +3,6 @@
 /**
  * Admin interface to the image proxy cache.
  *
- * The naming here is important, it must follow Manage*Module.controller.php for
- * it to be discovered by the system and have its static addCoreFeature method
- * called to add it to the core features.
- *
  * @name ImageCache
  * @author Spuds
  * @copyright (c) 2017 Spuds
@@ -24,6 +20,12 @@
 class ManageImageCacheModule_Controller extends Action_Controller
 {
 	/**
+	 * Boards settings form.
+	 * @var Settings_Form
+	 */
+	protected $_imagecacheSettings;
+
+	/**
 	 * Requires admin_forum permissions
 	 *
 	 * @uses ImageCache language file
@@ -39,6 +41,9 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	 */
 	public function action_index()
 	{
+		// We're working with them settings here.
+		require_once(SUBSDIR . '/SettingsForm.class.php');
+
 		// Some many options
 		$subActions = array(
 			'cleanimagecache' => array($this, 'action_cleanimagecache', 'permission' => 'admin_forum'),
@@ -59,57 +64,12 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	}
 
 	/**
-	 * Used to add the Image Cache entry to the Core Features list.
-	 *
-	 * - Called statically from the CoreFeatures Controller
-	 *
-	 * @param mixed[] $core_features The core features array
-	 */
-	public static function addCoreFeature(&$core_features)
-	{
-		isAllowedTo('admin_forum');
-		loadLanguage('ImageCache');
-
-		$core_features['ic'] = array(
-			'url' => 'action=admin;area=manageimagecache',
-			'settings' => array(
-				'image_cache_enabled' => 1,
-			),
-			'setting_callback' => function ($value) {
-				// Toggle the removing of old image proxy files
-				require_once(SUBSDIR . '/ScheduledTasks.subs.php');
-				toggleTaskStatusByName('remove_old_image_cache', $value);
-
-				$modules = array('admin');
-
-				// Enabling, register the modules and prepare the scheduled task
-				if ($value)
-				{
-					ManageImageCacheModule_Controller::updateScheduleTask('add');
-					enableModules('image_cache', $modules);
-					calculateNextTrigger('remove_old_image_cache');
-					Hooks::get()->enableIntegration('Image_Cache_Integrate');
-				}
-				// Disabling, just forget about the modules
-				else
-				{
-					ManageImageCacheModule_Controller::updateScheduleTask();
-					disableModules('image_cache', $modules);
-					Hooks::get()->disableIntegration('Image_Cache_Integrate');
-				}
-			},
-		);
-	}
-
-	/**
 	 * Adds or removes the scheduled task from the system.  Adds when the
 	 * module is enabled and removes it when it is disabled.
 	 *
-	 * This must be a static method as it is called from static addCoreFeature method
-	 *
 	 * @param string $action 'add' to activate the task
 	 */
-	public static function updateScheduleTask($action = '')
+	public function updateScheduleTask($action = '')
 	{
 		$db = database();
 
@@ -136,16 +96,14 @@ class ManageImageCacheModule_Controller extends Action_Controller
 
 	/**
 	 * This is used to add a clear image cache entry to the routine maintenance screen
-	 *
-	 * @param array $routine
 	 */
-	public static function ic_integrate_routine_maintenance(&$routine)
+	public static function imagecache_integrate_routine_maintenance()
 	{
-		global $txt, $scripturl;
+		global $txt, $scripturl, $context;
 
 		loadLanguage('ImageCache');
 
-		$routine += array(
+		$context['routine_actions'] += array(
 			'cleanimagecache' => array(
 				'url' => $scripturl . '?action=admin;area=manageimagecache;sa=cleanimagecache',
 				'title' => $txt['maintain_imagecache'],
@@ -168,6 +126,7 @@ class ManageImageCacheModule_Controller extends Action_Controller
 		validateToken('admin-maint');
 
 		// Remove them ALL
+		require_once(SUBSDIR . '/ImageCache.class.php');
 		$image_cache = new Image_Cache();
 		$image_cache->pruneImageCache();
 
@@ -188,10 +147,10 @@ class ManageImageCacheModule_Controller extends Action_Controller
 		global $context, $txt, $scripturl;
 
 		// Initialize the form
-		$settingsForm = new Settings_Form(Settings_Form::DB_ADAPTER);
+		$this->_initImageCacheSettingsForm();
 
-		// Initialize it with our settings
-		$settingsForm->setConfigVars($this->_settings());
+		// Get all settings
+		$config_vars = $this->_imagecacheSettings->settings();
 
 		// Setup the template.
 		$context['page_title'] = $txt['image_cache_title'];
@@ -203,15 +162,20 @@ class ManageImageCacheModule_Controller extends Action_Controller
 		);
 
 		// Saving them ?
-		if (isset($this->_req->query->save))
+		if (isset($_GET['save']))
 		{
 			checkSession();
 
 			// Perhaps an addon exists, or wants to, for this module
 			call_integration_hook('integrate_save_imagecache_settings');
 
-			$settingsForm->setConfigValues((array) $this->_req->post);
-			$settingsForm->save();
+			// On/Off scheduled task
+			if (!empty($_POST['image_cache_enabled']))
+				$this->updateScheduleTask('add');
+			else
+				$this->updateScheduleTask();
+
+			Settings_Form::save_db($config_vars);
 			redirectexit('action=admin;area=manageimagecache');
 		}
 
@@ -220,7 +184,22 @@ class ManageImageCacheModule_Controller extends Action_Controller
 		$context['settings_title'] = $txt['image_cache_title'];
 
 		// Prepare the settings...
-		$settingsForm->prepare();
+		Settings_Form::prepare_db($config_vars);
+	}
+
+	/**
+	 * Initialize the boardSettings form, with the current configuration
+	 * options for admin board settings screen.
+	 */
+	private function _initImageCacheSettingsForm()
+	{
+		// Instantiate the form
+		$this->_imagecacheSettings = new Settings_Form();
+
+		// Initialize it with our settings
+		$config_vars = $this->_settings();
+
+		return $this->_imagecacheSettings->settings($config_vars);
 	}
 
 	/**
@@ -230,13 +209,12 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	{
 		global $txt;
 
-		loadLanguage('ImageCache');
-
 		// Here are all the image cache settings, what all this for that :D
 		$config_vars = array(
 			array('desc', 'image_cache_desc'),
 			array('check', 'image_cache_enabled'),
 			array('check', 'image_cache_all'),
+			array('int', 'image_cache_maxsize', 'subtext' => $txt['image_cache_maxsize_subnote']),
 			array('int', 'image_cache_keep_days', 'postinput' => $txt['days_word'], 'subtext' => $txt['image_cache_keep_days_subnote']),
 		);
 

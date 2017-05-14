@@ -15,8 +15,6 @@
  *
  */
 
-const ELK = 'SSI';
-
 /**
  * Class Elk_Proxy
  */
@@ -34,10 +32,14 @@ class Elk_Proxy
 	private $_fileSize = 0;
 	/** @var string image etag */
 	private $_eTag;
-	/** @var mixed|string the image requested */
+	/** @var string the image requested */
 	private $_image = '';
-	/** @var mixed|string the hash for the image */
+	/** @var string the hash for the image */
 	private $_hash = '';
+	/** @var string the db hash for the image */
+	private $_hash_hmac = '';
+	/** @var bool if the image exists in the cache */
+	private $_cache_hit = false;
 
 	/**
 	 * Elk_Proxy constructor.
@@ -47,18 +49,26 @@ class Elk_Proxy
 		global $boardurl, $modSettings;
 
 		// Let the Elk out of the barn
-		require_once(dirname(__FILE__) . '/bootstrap.php');
+		require_once(dirname(__FILE__) . '/SSI.php');
 
 		$this->_boardurl = $boardurl;
 
 		$this->_req = HttpReq::instance();
 
 		// Using the proxy, we need both the requested image and a hash
-		if (isset($this->_req->query->image, $this->_req->query->hash))
+		if (isset($_GET['image'], $_GET['hash']))
 		{
-			$this->_image = urldecode($this->_req->getQuery('image', 'trim', 'none'));
-			$this->_hash = $this->_req->getQuery('hash', 'trim', '');
-			$this->_fileName = CACHEDIR . '/img_cache_' . hash_hmac('md5', $this->_image, $modSettings['imagecache_sauce']);
+			$this->_image = 'none';
+			if (isset($_GET['image']))
+				$this->_image = trim(urldecode($_GET['image']));
+
+			$this->_hash = '';
+			if (isset($_GET['hash']))
+				$this->_hash = trim($_GET['hash']);
+
+			$this->_hash_hmac = hash_hmac('md5', $this->_image, $modSettings['imagecache_sauce']);
+
+			$this->_fileName = CACHEDIR . '/img_cache_' . $this->_hash_hmac . '.elk';
 		}
 	}
 
@@ -100,7 +110,7 @@ class Elk_Proxy
 	{
 		// If it hasn't been modified since the last time this attachment was retrieved,
 		// there's no need to send it again.
-		if (!empty($this->_req->server->HTTP_IF_MODIFIED_SINCE))
+		if (!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']) && $this->_cache_hit)
 		{
 			list ($modified_since) = explode(';', $_SERVER['HTTP_IF_MODIFIED_SINCE']);
 			if (strtotime($modified_since) >= filemtime($this->_fileName))
@@ -120,9 +130,10 @@ class Elk_Proxy
 	private function _checkEtag()
 	{
 		// Check whether the ETag was sent back, and cache based on that...
-		$this->_eTag = '"' . substr($this->_fileName . filemtime($this->_fileName), 0, 64) . '"';
-		if (!empty($this->_req->server->HTTP_IF_NONE_MATCH) &&
-			strpos($this->_req->server->HTTP_IF_NONE_MATCH, $this->_eTag) !== false)
+		$this->_eTag = '"' . substr($this->_hash . filemtime($this->_fileName), 0, 64) . '"';
+		if (!empty($_SERVER['HTTP_IF_NONE_MATCH']) &&
+			strpos($_SERVER['HTTP_IF_NONE_MATCH'], $this->_eTag) !== false &&
+			$this->_cache_hit)
 		{
 			@ob_end_clean();
 
@@ -136,36 +147,24 @@ class Elk_Proxy
 	 */
 	private function _sendHeaders()
 	{
+		// Set/Choose a mime for the header
+		$size = getimagesize($this->_fileName);
+		$mime = isset($size['mime']) ? $size['mime'] : 'image/jpg';
+
 		// Send the attachment headers.
-		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 525600 * 60) . ' GMT');
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($this->_fileName)) . ' GMT');
 		header('Accept-Ranges: bytes');
 		header('Connection: close');
-		header('ETag: ' . $this->_eTag);
-		header('Content-Type: image/png');
-
-		$disposition = 'inline';
-
-		// Different browsers like different standards...
-		if (isBrowser('firefox'))
-		{
-			header('Content-Disposition: ' . $disposition . '; filename*=UTF-8\'\'' . rawurlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName)));
-		}
-		elseif (isBrowser('opera'))
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName) . '"');
-		}
-		elseif (isBrowser('ie'))
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . urlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName)) . '"');
-		}
-		else
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . $this->_fileName . '"');
-		}
-
-		header('Cache-Control: max-age=' . (525600 * 60) . ', private');
+		header('Content-Type: ' . $mime);
+		header('Content-Disposition: inline');
 		header('Content-Length: ' . $this->_fileSize);
+
+		if ($this->_cache_hit)
+		{
+			header('ETag: ' . $this->_eTag);
+			header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 525600 * 60) . ' GMT');
+			header('Cache-Control: max-age=' . (525600 * 60) . ', private');
+		}
 	}
 
 	/**
@@ -208,22 +207,19 @@ class Elk_Proxy
 	 */
 	public function isValidRequest()
 	{
-		global $modSettings;
-
-		$hash = hash_hmac('md5', $this->_image, $modSettings['imagecache_sauce']);
-
-		if ($hash !== $this->_hash)
-		{
-			return false;
-		}
-
-		if (!file_exists($this->_fileName))
+		if ($this->_hash_hmac !== $this->_hash)
 		{
 			return false;
 		}
 
 		if (!$this->_isValidReferrer())
 		{
+			return false;
+		}
+
+		if (!file_exists($this->_fileName))
+		{
+			$this->_resetCacheEntry();
 			return false;
 		}
 
@@ -264,11 +260,65 @@ class Elk_Proxy
 
 		return $is_allowed;
 	}
+
+	/**
+	 * Called to remove a db entry from the cache
+	 *
+	 * - If we receive a valid hash but can't find the file, this will
+	 * clear the entry (should it exists) from the db as well
+	 * - We seed all new requests with the default image, so it *should*
+	 * always be found, but if not, we clear the db entry
+	 */
+	private function _resetCacheEntry()
+	{
+		// Use the image cache to do the necessary work
+		require_once(SUBSDIR . '/ImageCache.class.php');
+		$cache = new Image_Cache(database(), $this->_image);
+		$cache->removeImageFromCacheTable();
+	}
+
+	/**
+	 * Fetch and save a remote image
+	 *
+	 * - If image exists, updates last access date
+	 * - If image does not exist, attempts to fetch it from the location
+	 * - Should be called after isValidRequest
+	 */
+	public function fetchImage()
+	{
+		// Use the image cache to check availability of the image
+		require_once(SUBSDIR . '/ImageCache.class.php');
+		$cache = new Image_Cache(database(), $this->_image);
+		$this->_cache_hit = $cache->getImageFromCacheTable();
+
+		// True means we have the image, so we just update the access date
+		if ($this->_cache_hit === true)
+		{
+			$cache->updateImageCacheHitDate();
+		}
+		// A false or numeric result means we need to try
+		else
+		{
+			// A false result means we never tried to get this file
+			if ($this->_cache_hit === false)
+			{
+				$cache->createCacheImage();
+			}
+			// A numeric means we have tried and failed
+			else
+			{
+				$cache->retryCreateImageCache();
+			}
+
+			$this->_cache_hit = $cache->returnStatus();
+		}
+	}
 }
 
-// Send a cached image file
+// Fetch, save and send a cached image file
 $proxy = new Elk_Proxy();
 if ($proxy->isValidRequest())
 {
+	$proxy->fetchImage();
 	$proxy->sendImage();
 }

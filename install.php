@@ -20,8 +20,10 @@ elseif (!defined('ELK')) // If we are outside ELK and can't find SSI.php, then t
 
 global $db_prefix, $db_package_log;
 
-// Create the image_cache table
 $dbtbl = db_table();
+$db = database();
+
+// Create the image_cache table
 $dbtbl->db_create_table($db_prefix . 'image_cache',
 	array(
 		array(
@@ -49,5 +51,22 @@ $dbtbl->db_create_table($db_prefix . 'image_cache',
 	),
 	array(),
 	'ignore');
+
+// Add the scheduled task
+$row = array(
+	'method' => 'ignore',
+	'table_name' => '{db_prefix}scheduled_tasks',
+	'columns' => array(
+		'next_time' => 'int',
+		'time_offset' => 'int',
+		'time_regularity' => 'int',
+		'time_unit' => 'string',
+		'disabled' => 'int',
+		'task' => 'string',
+	),
+	'data' => array (1231542000, 39620, 1, 'd', 1, 'remove_old_image_cache'),
+	'keys' => array('id_task'),
+);
+$db->insert($row['method'], $row['table_name'], $row['columns'], $row['data'], $row['keys']);
 
 $db_package_log = $dbtbl->package_log();

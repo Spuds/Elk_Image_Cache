@@ -43,7 +43,7 @@ class Image_Cache extends AbstractModel
 
 		$this->data = $file;
 		$this->hash = $this->_imageCacheHash();
-		$this->destination = CACHEDIR . '/img_cache_' . $this->hash;
+		$this->destination = CACHEDIR . '/img_cache_' . $this->hash . '.elk';
 	}
 
 	/**
@@ -69,6 +69,79 @@ class Image_Cache extends AbstractModel
 		}
 
 		return hash_hmac('md5', $this->data, $this->_modSettings['imagecache_sauce']);
+	}
+
+	/**
+	 * To avoid blocking in parseBBC, we seed the cache table
+	 * and save a default image.  When the cache is requested
+	 * the first time the image will be fetched (page load)
+	 */
+	public function seedImageCacheTable()
+	{
+		$cache_hit = $this->getImageFromCacheTable();
+
+		// A false result means we are seeding, otherwise it does exist
+		if ($cache_hit === false)
+		{
+			// If its to large, flag it as "done" so we don't try to fetch the file
+			// otherwise we seed with past time to ensure its retried immediately
+			if (!empty($this->_modSettings['image_cache_maxsize']) && $this->sniffSize() > $this->_modSettings['image_cache_maxsize'])
+			{
+				$input = array($this->hash, time(), 0);
+			}
+			else
+			{
+				$input = array($this->hash, time() - 120, 1);
+			}
+
+			// Make the entry
+			$this->_db->insert('ignore',
+				'{db_prefix}image_cache',
+				array('filename' => 'string', 'log_time' => 'int', 'num_fail' => 'int'),
+				$input,
+				array('filename')
+			);
+
+			$this->_setTemporaryImage();
+		}
+	}
+
+	/**
+	 * Check to see how large this image is
+	 *
+	 * @return float|int
+	 */
+	public function sniffSize()
+	{
+		$size = 0;
+		stream_context_set_default(array('http' => array('method' => 'HEAD')));
+		$head = @get_headers($this->data, 1);
+
+		if ($head !== false)
+		{
+			$head = array_change_key_case($head);
+
+			// Read from Content-Length: if it exists
+			$size = isset($head['content-length']) && is_numeric ($head['content-length']) ? $head['content-length'] : 0;
+			$size = round($size / 1048576, 2);
+		}
+
+		// Size in MB or 0 if we don't know
+		return $size;
+	}
+
+	/**
+	 * Removes and image entry from the cache table
+	 */
+	public function removeImageFromCacheTable()
+	{
+		$this->_db->query('', '
+			DELETE FROM {db_prefix}image_cache
+			WHERE filename = {string:filename}',
+			array(
+				'filename' => $this->hash,
+			)
+		);
 	}
 
 	/**
@@ -118,6 +191,7 @@ class Image_Cache extends AbstractModel
 		// Time to give up ?
 		if ($this->num_fail > $this->max_retry)
 		{
+			$this->success = false;
 			return;
 		}
 
@@ -168,6 +242,16 @@ class Image_Cache extends AbstractModel
 
 		// Log success or failure
 		$this->_actOnResult();
+	}
+
+	/**
+	 * If we have the image or not
+	 *
+	 * @return bool
+	 */
+	public function returnStatus()
+	{
+		return $this->success;
 	}
 
 	/**
@@ -224,8 +308,6 @@ class Image_Cache extends AbstractModel
 
 	/**
 	 * On failure, saves our default mime image for use
-	 *
-	 * @return array
 	 */
 	private function _setTemporaryImage()
 	{
@@ -267,6 +349,8 @@ class Image_Cache extends AbstractModel
 				)
 			);
 		}
+
+		$this->success = true;
 	}
 
 	/**
@@ -279,7 +363,7 @@ class Image_Cache extends AbstractModel
 		// Remove '/img_cache_' files in our disk cache directory
 		try
 		{
-			$files = new GlobIterator(CACHEDIR . '/img_cache_*', FilesystemIterator::SKIP_DOTS);
+			$files = new GlobIterator(CACHEDIR . '/img_cache_*.elk', FilesystemIterator::SKIP_DOTS);
 
 			foreach ($files as $file)
 			{

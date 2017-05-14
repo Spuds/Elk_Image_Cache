@@ -7,6 +7,8 @@ $txt['image_cache_label'] = 'Image Cache';
 $txt['image_cache_enabled'] = 'Enable [img] ImageCache';
 $txt['image_cache_keep_days'] = 'Remove cached images that have not been accessed in:';
 $txt['image_cache_keep_days_subnote'] = 'Enter 0 to keep images indefinitely';
+$txt['image_cache_maxsize'] = 'Largest image size to cache (MB)';
+$txt['image_cache_maxsize_subnote'] = 'This attempts to determine the filesize of the image before downloading, but will not always work.  Enter 0 for no limit.';
 $txt['image_cache_all'] = 'Cache all [img]\'s, not just ones needed for HTTPS sites.';
 
 $txt['image_cache_desc'] = 'This will serve images embedded with [IMG] tags from your domain through a proxy mechanism.  The remote image is saved to your cache directory and served from there.  You can choose to do this for all [IMG] tags or just those that would cause "insecure content" warnings when your site is running HTTPS';

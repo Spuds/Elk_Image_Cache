@@ -20,11 +20,6 @@ elseif (!defined('ELK')) // If we are outside ELK and can't find SSI.php, then t
 
 global $modSettings;
 
-require_once (SUBSDIR . '/Admin.subs.php');
-
-// Turn off the image cache to ensure core features enabling code is
-// triggered on any future update/install
-
 // Remove scheduled task
 $db = database();
 $db->query('', '
@@ -34,13 +29,3 @@ $db->query('', '
 		'task' => 'remove_old_image_cache'
 	)
 );
-
-// Remove module hooks
-disableModules('image_cache', array('admin'));
-Hooks::get()->disableIntegration('Image_Cache_Integrate');
-
-// Remove enabled settings (core feature)
-$setting_changes['image_cache_enabled']  = 0;
-if (!empty($modSettings['admin_features']))
-	$setting_changes['admin_features'] = str_replace(',ic', '', $modSettings['admin_features']);
-updateSettings($setting_changes);

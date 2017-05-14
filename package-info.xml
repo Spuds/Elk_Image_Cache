@@ -6,29 +6,43 @@
 	<type>addon</type>
 	<version>1.0</version>
 
-	<install for="1.1 RC1 - 1.1.99">
+	<install for="1.0 - 1.0.99">
+		<license type="inline">This ElkArte addon is released under a MPL V1.1 license, a copy of it with its provisions is included with the package.</license>
+
 		<require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
-		<require-dir name="modules" destination="SOURCEDIR">Core feature interface</require-dir>
 		<require-dir name="admin" destination="SOURCEDIR">Admin panel controllers</require-dir>
 		<require-dir name="subs" destination="SOURCEDIR">Helpers</require-dir>
 		<require-dir name="themes" destination="BOARDDIR">Templates, CSS, Language</require-dir>
+
+		<hook hook="integrate_bbc_codes" file="SUBSDIR/ImageCache.integrate.php" function="Image_Cache_Integrate::imagecache_integrate_bbc_codes" />
+		<hook hook="integrate_routine_maintenance" file="ADMINDIR/ManageImageCacheModule.controller.php" function="ManageImageCacheModule_Controller::imagecache_integrate_routine_maintenance" />
+		<hook hook="integrate_list_scheduled_tasks" file="SUBSDIR/ImageCache.integrate.php" function="Image_Cache_Integrate::imagecache_integrate_list_scheduled_tasks" />
+		<hook hook="integrate_autotask_include" function="SUBSDIR/RemoveOldImageCache.php" />
+		<hook hook="integrate_admin_areas" file="SUBSDIR/ImageCache.integrate.php" function="Image_Cache_Integrate::imagecache_integrate_admin_areas" />
+		<hook hook="integrate_admin_search" file="SUBSDIR/ImageCache.integrate.php" function="Image_Cache_Integrate::imagecache_integrate_admin_search" />
+
 		<database type="file">install.php</database>
-		<redirect url="index.php?action=admin;area=corefeatures" timeout="5000">redirect.txt</redirect>
+		<redirect url="index.php?action=admin;area=manageimagecache" timeout="5000">redirect.txt</redirect>
 	</install>
 
-	<uninstall for="1.1 RC1 - 1.1.99">
-		<hook reverse="true" hook="autoload_integrate" function="Image_Cache_Integrate" />
+	<uninstall for="1.0 - 1.0.99">
+		<hook reverse="true" hook="integrate_bbc_codes" function="Image_Cache_Integrate::imagecache_integrate_bbc_codes" />
+		<hook reverse="true" hook="integrate_routine_maintenance" function="ManageImageCacheModule_Controller::imagecache_integrate_routine_maintenance" />
+		<hook reverse="true" hook="integrate_list_scheduled_tasks" function="Image_Cache_Integrate::imagecache_integrate_list_scheduled_tasks" />
+		<hook reverse="true" hook="integrate_autotask_include" function="SUBSDIR/RemoveOldImageCache.php" />
+		<hook reverse="true" hook="integrate_admin_areas" function="Image_Cache_Integrate::imagecache_integrate_admin_areas" />
+		<hook reverse="true" hook="integrate_admin_search" function="Image_Cache_Integrate::imagecache_integrate_admin_search" />
+
 		<code type="file">uninstall.php</code>
+
 		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
-		<remove-file name="SOURCEDIR/modules/ImageCache/ImageCacheAdminModule.class.php" />
-		<remove-file name="SUBSDIR/ScheduledTask/RemoveOldImageCache.php" />
+		<remove-file name="SUBSDIR/RemoveOldImageCache.php" />
 		<remove-file name="SUBSDIR/ImageCache.class.php" />
 		<remove-file name="SUBSDIR/ImageCache.integrate.php" />
 		<remove-file name="BOARDDIR/imagecache.php" />
 		<remove-file name="LANGUAGEDIR/english/ImageCache.english.php" />
 		<remove-file name="THEMEDIR/css/imagecache.css" />
 		<remove-file name="THEMEDIR/scripts/imagecache.js" />
-		<remove-file name="THEMEDIR/images/admin/feature_ic.png" />
 	</uninstall>
 
 </package-info>

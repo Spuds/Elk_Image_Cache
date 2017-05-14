@@ -73,7 +73,7 @@ class Image_Cache_Integrate
 	/**
 	 * Determines if the image would require cache usage
 	 *
-	 * - Used by the updated BBC img codes added by integrate_additional_bbc
+	 * - Used by the updated BBC img codes added by imagecache_integrate_bbc_codes
 	 *
 	 * @return Closure
 	 */
@@ -88,10 +88,22 @@ class Image_Cache_Integrate
 		// Return a closure function for the bbc code
 		return function (&$tag, &$data, $disabled) use ($boardurl, $txt, &$js_loaded, $always)
 		{
-			$data = addProtocol($data);
+			$data = Image_Cache_Integrate::addProtocol($data);
 
 			$parseBoard = parse_url($boardurl);
 			$parseImg = parse_url($data);
+
+			// If its seriously malformed, give up now
+			if ($parseImg === false)
+			{
+				return false;
+			}
+
+			// No need to cache an image that is already from this site
+			if (strpos($parseBoard['host'], $parseImg['host']) === 0)
+			{
+				return false;
+			}
 
 			// No need to cache an image that is not going over https, or is already https over https
 			if (!$always && ($parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
@@ -106,28 +118,10 @@ class Image_Cache_Integrate
 				loadJavascriptFile('imagecache.js', array('defer' => true));
 			}
 
-			// Use the image cache to check availability
+			// Use the image cache to generate hash and seed if needed
+			require_once(SUBSDIR . '/ImageCache.class.php');
 			$proxy = new Image_Cache(database(), $data);
-			$cache_hit = $proxy->getImageFromCacheTable();
-
-			// A false or numeric result means we need to try
-			if ($cache_hit === true)
-			{
-				$proxy->updateImageCacheHitDate();
-			}
-			else
-			{
-				// A false result means we never tried to get this file
-				if ($cache_hit === false)
-				{
-					$proxy->createCacheImage();
-				}
-				// A numeric means we have tried and failed
-				else
-				{
-					$proxy->retryCreateImageCache();
-				}
-			}
+			$proxy->seedImageCacheTable();
 
 			$data = $boardurl . '/imagecache.php?image=' . urlencode($data) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($data);
 
@@ -136,59 +130,94 @@ class Image_Cache_Integrate
 	}
 
 	/**
-	 * $codes will be populated with what other addons, modules etc have added to the system
-	 * but will not contain the default codes. Codes added here will parse before any default ones,
-	 * effectively over writing them as default codes are appended to this this array.
+	 * Adds a protocol (http/s) to the beginning of an url if it is missing
+	 *
+	 * @param string $url - The url
+	 * @return string - The url with the protocol
+	 */
+	public static function addProtocol($url)
+	{
+		$pattern = '~^(http://|https://)~i';
+		$protocols = array('http://');
+
+		$found = false;
+		$url = preg_replace_callback($pattern, function($match) use (&$found) {
+			$found = true;
+
+			return strtolower($match[0]);
+		}, $url);
+
+		if ($found === true)
+		{
+			return $url;
+		}
+
+		return $protocols[0] . $url;
+	}
+
+	/**
+	 * Update all IMG tags to use our cache validation function
 	 *
 	 * @param array $codes
 	 */
-	public static function integrate_additional_bbc(&$codes)
+	public static function imagecache_integrate_bbc_codes(&$codes)
 	{
+		loadLanguage('ImageCache');
 		loadCSSFile('imagecache.css');
+
+		foreach ($codes as $key => $code)
+		{
+			if ($code['tag'] === 'img')
+			{
+				$codes[$key]['validate'] = self::imageNeedsCache();
+			}
+		}
+	}
+
+	/**
+	 * Used to add the ImageCache entry to the admin menu.
+	 *
+	 * @param mixed[] $admin_areas The admin menu array
+	 */
+	public static function imagecache_integrate_admin_areas(&$admin_areas)
+	{
+		global $txt;
+
 		loadLanguage('ImageCache');
 
-		// Add Image Cache codes
-		$codes = array_merge($codes, array(
-			array(
-				\BBC\Codes::ATTR_TAG => 'img',
-				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
-				\BBC\Codes::ATTR_PARAM => array(
-					'width' => array(
-						\BBC\Codes::PARAM_ATTR_VALUE => 'width:100%;max-width:$1px;',
-						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-					),
-					'height' => array(
-						\BBC\Codes::PARAM_ATTR_VALUE => 'max-height:$1px;',
-						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-					),
-					'title' => array(
-						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-					),
-					'alt' => array(
-						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
-					),
-				),
-				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
-				\BBC\Codes::ATTR_VALIDATE => self::imageNeedsCache(),
-				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
-				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
-				\BBC\Codes::ATTR_AUTOLINK => false,
-				\BBC\Codes::ATTR_LENGTH => 3,
-			),
-			array(
-				\BBC\Codes::ATTR_TAG => 'img',
-				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
-				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="" class="bbc_img" />',
-				\BBC\Codes::ATTR_VALIDATE => self::imageNeedsCache(),
-				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
-				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
-				\BBC\Codes::ATTR_AUTOLINK => false,
-				\BBC\Codes::ATTR_LENGTH => 3,
-			)
-		));
+		// Set a new admin area
+		$admin_areas['config']['areas']['manageimagecache'] = array(
+			'label' => $txt['image_cache_title'],
+			'controller' => 'ManageImageCacheModule_Controller',
+			'function' => 'action_index',
+			'icon' => 'transparent.png',
+			'class' => 'admin_img_logs',
+			'permission' => array('admin_forum'),
+			'file' => 'ManageImageCacheModule.controller.php',
+		);
+	}
+
+	/**
+	 * Used to add the ImageCache entry to the admin search.
+	 *
+	 * @param string[] $language_files
+	 * @param string[] $include_files
+	 * @param mixed[] $settings_search
+	 */
+	public static function imagecache_integrate_admin_search(&$language_files, &$include_files, &$settings_search)
+	{
+		$language_files[] = 'ImageCache';
+		$include_files[] = 'ManageImageCacheModule.controller';
+		$settings_search[] = array('settings_search', 'area=manageimagecache', 'ManageImageCacheModule_Controller');
+	}
+
+	/**
+	 * Integration hook, integrate_list_scheduled_tasks, called from ManageScheduledTasks.controller,
+	 * (actually called from createlist)
+	 */
+	public static function imagecache_integrate_list_scheduled_tasks()
+	{
+		// Just need our language strings for the listing
+		loadLanguage('ImageCache');
 	}
 }
