@@ -88,14 +88,14 @@ class ManageImageCacheModule_Controller extends Action_Controller
 					ManageImageCacheModule_Controller::updateScheduleTask('add');
 					enableModules('image_cache', $modules);
 					calculateNextTrigger('remove_old_image_cache');
-					Hooks::get()->enableIntegration('Image_Cache_Integrate');
+					Hooks::instance()->enableIntegration('Image_Cache_Integrate');
 				}
 				// Disabling, just forget about the modules
 				else
 				{
 					ManageImageCacheModule_Controller::updateScheduleTask();
 					disableModules('image_cache', $modules);
-					Hooks::get()->disableIntegration('Image_Cache_Integrate');
+					Hooks::instance()->disableIntegration('Image_Cache_Integrate');
 				}
 			},
 		);
