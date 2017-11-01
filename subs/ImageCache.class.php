@@ -18,6 +18,9 @@
  * Class Image_Cache
  *
  * Provides all functions relating to running the image cache proxy
+ *
+ * - AbstractModel provides $db ($this_db) and $modSettings ($this->_modSettings)
+ * for use in the extended class
  */
 class Image_Cache extends AbstractModel
 {
@@ -49,7 +52,7 @@ class Image_Cache extends AbstractModel
 	/**
 	 * Creates a hash code using the image name and our secret key
 	 *
-	 * - If no salt has been set, creates a random one for use, and sets it
+	 * - If no salt (secret key) has been set, creates a random one for use, and sets it
 	 * in modsettings for future use
 	 *
 	 * @return string

@@ -13,7 +13,7 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 1.0.2
  *
  */
 
@@ -32,7 +32,7 @@ class Image_Cache_Integrate
 	 * Register ImageCache hooks to the system
 	 *
 	 * - register method is called statically from loadIntegrations in Hooks.class
-	 * - used here to update bbc img tag rendering
+	 * - used here to update bbc img tag rendering and avatar save in profile
 	 *
 	 * @return array
 	 */
@@ -82,7 +82,7 @@ class Image_Cache_Integrate
 	{
 		global $boardurl, $modSettings;
 
-		// Trickery for 5.3
+		// Trickery for php5.3
 		$js_loaded =& self::$js_load;
 		$always = !empty($modSettings['image_cache_all']);
 
@@ -112,7 +112,9 @@ class Image_Cache_Integrate
 	/**
 	 * Stores the image at the URL passed in the cache.
 	 *
-	 * @param string $imageurl
+	 * @param string $imageUrl
+	 *
+	 * @return string
 	 */
 	protected static function proxifyImage($imageUrl)
 	{
@@ -140,15 +142,18 @@ class Image_Cache_Integrate
 				$proxy->retryCreateImageCache();
 			}
 		}
+
 		return $boardurl . '/imagecache.php?image=' . urlencode($imageUrl) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($imageUrl);
 	}
 
 	/**
-	 * Determines if a certain URL needs to be cached, giveng the board url.
+	 * Determines if a certain URL needs to be cached, given the board url.
 	 *
 	 * @param string $boardurl
 	 * @param string $imageurl
 	 * @param bool $always
+	 *
+	 * @return boolean
 	 */
 	protected static function cacheNeedsImage($boardurl, $imageurl, $always)
 	{
@@ -189,8 +194,10 @@ class Image_Cache_Integrate
 
 	/**
 	 * $codes will be populated with what other addons, modules etc have added to the system
-	 * but will not contain the default codes. Codes added here will parse before any default ones,
-	 * effectively over writing them as default codes are appended to this this array.
+	 * but will not contain the default codes.
+	 *
+	 * Codes added here will parse before any default ones effectively over writing them as
+	 * default codes are appended to this this array.
 	 *
 	 * @param array $codes
 	 */
