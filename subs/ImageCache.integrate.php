@@ -158,7 +158,7 @@ class Image_Cache_Integrate
 		$parseImg = parse_url($imageurl);
 
 		// No need to cache an image that is not going over https, or is already https over https
-		if (!$always && ($parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
+		if (!$always && (empty($parseImg['scheme']) || $parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
 		{
 			return false;
 		}
