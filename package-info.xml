@@ -4,9 +4,9 @@
 	<name>ImageCache</name>
 	<id>spuds:imagecache</id>
 	<type>addon</type>
-	<version>1.0</version>
+	<version>1.0.1</version>
 
-	<install for="1.1 RC1 - 1.1.99">
+	<install for="1.1 - 1.1.99">
 		<require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
 		<require-dir name="modules" destination="SOURCEDIR">Core feature interface</require-dir>
 		<require-dir name="admin" destination="SOURCEDIR">Admin panel controllers</require-dir>
@@ -16,7 +16,7 @@
 		<redirect url="index.php?action=admin;area=corefeatures" timeout="5000">redirect.txt</redirect>
 	</install>
 
-	<uninstall for="1.1 RC1 - 1.1.99">
+	<uninstall for="1.1 - 1.1.99">
 		<hook reverse="true" hook="autoload_integrate" function="Image_Cache_Integrate" />
 		<code type="file">uninstall.php</code>
 		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
