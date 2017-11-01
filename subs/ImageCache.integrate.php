@@ -48,6 +48,7 @@ class Image_Cache_Integrate
 		// $hook, $function, $file
 		return array(
 			array('integrate_additional_bbc', 'Image_Cache_Integrate::integrate_additional_bbc'),
+			array('integrate_avatar', 'Image_Cache_Integrate::integrate_avatar'),
 		);
 	}
 
@@ -77,24 +78,20 @@ class Image_Cache_Integrate
 	 *
 	 * @return Closure
 	 */
-	public static function imageNeedsCache()
+	public static function bbcValidateImageNeedsCache()
 	{
-		global $boardurl, $txt, $modSettings;
+		global $boardurl, $modSettings;
 
 		// Trickery for 5.3
 		$js_loaded =& self::$js_load;
 		$always = !empty($modSettings['image_cache_all']);
 
 		// Return a closure function for the bbc code
-		return function (&$tag, &$data, $disabled) use ($boardurl, $txt, &$js_loaded, $always)
+		return function (&$tag, &$data, $disabled) use ($boardurl, &$js_loaded, $always)
 		{
-			$data = addProtocol($data);
+			$doCache = self::cacheNeedsImage($boardurl, $data, $always);
 
-			$parseBoard = parse_url($boardurl);
-			$parseImg = parse_url($data);
-
-			// No need to cache an image that is not going over https, or is already https over https
-			if (!$always && ($parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
+			if ($doCache === false)
 			{
 				return false;
 			}
@@ -106,33 +103,88 @@ class Image_Cache_Integrate
 				loadJavascriptFile('imagecache.js', array('defer' => true));
 			}
 
-			// Use the image cache to check availability
-			$proxy = new Image_Cache(database(), $data);
-			$cache_hit = $proxy->getImageFromCacheTable();
-
-			// A false or numeric result means we need to try
-			if ($cache_hit === true)
-			{
-				$proxy->updateImageCacheHitDate();
-			}
-			else
-			{
-				// A false result means we never tried to get this file
-				if ($cache_hit === false)
-				{
-					$proxy->createCacheImage();
-				}
-				// A numeric means we have tried and failed
-				else
-				{
-					$proxy->retryCreateImageCache();
-				}
-			}
-
-			$data = $boardurl . '/imagecache.php?image=' . urlencode($data) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($data);
+			$data = self::proxifyImage($data);
 
 			return true;
 		};
+	}
+
+	/**
+	 * Stores the image at the URL passed in the cache.
+	 *
+	 * @param string $imageurl
+	 */
+	protected static function proxifyImage($imageUrl)
+	{
+		global $boardurl, $txt;
+
+		// Use the image cache to check availability
+		$proxy = new Image_Cache(database(), $imageUrl);
+		$cache_hit = $proxy->getImageFromCacheTable();
+
+		// A false or numeric result means we need to try
+		if ($cache_hit === true)
+		{
+			$proxy->updateImageCacheHitDate();
+		}
+		else
+		{
+			// A false result means we never tried to get this file
+			if ($cache_hit === false)
+			{
+				$proxy->createCacheImage();
+			}
+			// A numeric means we have tried and failed
+			else
+			{
+				$proxy->retryCreateImageCache();
+			}
+		}
+		return $boardurl . '/imagecache.php?image=' . urlencode($imageUrl) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($imageUrl);
+	}
+
+	/**
+	 * Determines if a certain URL needs to be cached, giveng the board url.
+	 *
+	 * @param string $boardurl
+	 * @param string $imageurl
+	 * @param bool $always
+	 */
+	protected static function cacheNeedsImage($boardurl, $imageurl, $always)
+	{
+		$imageurl = addProtocol($imageurl);
+
+		$parseBoard = parse_url($boardurl);
+		$parseImg = parse_url($imageurl);
+
+		// No need to cache an image that is not going over https, or is already https over https
+		if (!$always && ($parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+
+	/**
+	 * Replaces the href from $avatar with the proxy if needed.
+	 *
+	 * @param array $avatar
+	 * @param array $profile
+	 */
+	public static function integrate_avatar(&$avatar, $profile)
+	{
+		global $boardurl, $modSettings;
+
+		$always = !empty($modSettings['image_cache_all']);
+
+		if (self::cacheNeedsImage($boardurl, $avatar['href'], $always))
+		{
+			$proxy_href = self::proxifyImage($avatar['href']);
+			$avatar['image'] = str_replace($avatar['href'], $proxy_href, $avatar['image']);
+		}
 	}
 
 	/**
@@ -173,7 +225,7 @@ class Image_Cache_Integrate
 					),
 				),
 				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
-				\BBC\Codes::ATTR_VALIDATE => self::imageNeedsCache(),
+				\BBC\Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
 				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
 				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
 				\BBC\Codes::ATTR_AUTOLINK => false,
@@ -183,7 +235,7 @@ class Image_Cache_Integrate
 				\BBC\Codes::ATTR_TAG => 'img',
 				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
 				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="" class="bbc_img" />',
-				\BBC\Codes::ATTR_VALIDATE => self::imageNeedsCache(),
+				\BBC\Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
 				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
 				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
 				\BBC\Codes::ATTR_AUTOLINK => false,
