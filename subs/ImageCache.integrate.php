@@ -143,6 +143,12 @@ class Image_Cache_Integrate
 			}
 		}
 
+		// Make sure we have the language loaded
+		if (!isset($txt['image_cache_warn_ext']))
+		{
+			loadLanguage('ImageCache');
+		}
+
 		return $boardurl . '/imagecache.php?image=' . urlencode($imageUrl) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($imageUrl);
 	}
 
@@ -185,7 +191,11 @@ class Image_Cache_Integrate
 
 		$always = !empty($modSettings['image_cache_all']);
 
-		if (self::cacheNeedsImage($boardurl, $avatar['href'], $always))
+		if (!isset($avatar['href']))
+		{
+			return false;
+		}
+		elseif (self::cacheNeedsImage($boardurl, $avatar['href'], $always))
 		{
 			$proxy_href = self::proxifyImage($avatar['href']);
 			$avatar['image'] = str_replace($avatar['href'], $proxy_href, $avatar['image']);
