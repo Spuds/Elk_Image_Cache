@@ -39,6 +39,8 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	 */
 	public function action_index()
 	{
+		global $context;
+
 		// Some many options
 		$subActions = array(
 			'cleanimagecache' => array($this, 'action_cleanimagecache', 'permission' => 'admin_forum'),
