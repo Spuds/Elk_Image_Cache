@@ -11,11 +11,9 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 1.0.3
  *
  */
-
-const ELK = 'SSI';
 
 /**
  * Class Elk_Proxy
@@ -46,8 +44,16 @@ class Elk_Proxy
 	{
 		global $boardurl, $modSettings;
 
-		// Let the Elk out of the barn
+		// Let the Elk out of the barn, 1.1 and 1.1.1+
 		require_once(dirname(__FILE__) . '/bootstrap.php');
+		if (class_exists('Bootstrap'))
+		{
+			require_once(dirname(__FILE__) . '/SSI.php');
+		}
+		else
+		{
+			define('ELK', 'SSI');
+		}
 
 		$this->_boardurl = $boardurl;
 
