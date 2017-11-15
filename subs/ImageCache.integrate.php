@@ -13,7 +13,7 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.2
+ * @version 1.0.3
  *
  */
 
@@ -168,6 +168,12 @@ class Image_Cache_Integrate
 		$parseBoard = parse_url($boardurl);
 		$parseImg = parse_url($imageurl);
 
+		// No need if its already on this site (like uploaded avatars)
+		if ($parseImg['host'] === $parseBoard['host'])
+		{
+			return false;
+		}
+
 		// No need to cache an image that is not going over https, or is already https over https
 		if (!$always && (empty($parseImg['scheme']) || $parseBoard['scheme'] === 'http' || $parseBoard['scheme'] === $parseImg['scheme']))
 		{
@@ -183,9 +189,8 @@ class Image_Cache_Integrate
 	 * Replaces the href from $avatar with the proxy if needed.
 	 *
 	 * @param array $avatar
-	 * @param array $profile
 	 */
-	public static function integrate_avatar(&$avatar, $profile)
+	public static function integrate_avatar(&$avatar)
 	{
 		global $boardurl, $modSettings;
 
@@ -207,7 +212,7 @@ class Image_Cache_Integrate
 	 * but will not contain the default codes.
 	 *
 	 * Codes added here will parse before any default ones effectively over writing them as
-	 * default codes are appended to this this array.
+	 * default codes are appended to this array.
 	 *
 	 * @param array $codes
 	 */
