@@ -4,7 +4,7 @@
 	<name>ImageCache</name>
 	<id>spuds:imagecache</id>
 	<type>addon</type>
-	<version>1.0.2</version>
+	<version>1.0.3</version>
 
 	<install for="1.1 - 1.1.99">
 		<require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
