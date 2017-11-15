@@ -14,7 +14,7 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 1.0.3
  *
  */
 
@@ -239,6 +239,7 @@ class ManageImageCacheModule_Controller extends Action_Controller
 			array('desc', 'image_cache_desc'),
 			array('check', 'image_cache_enabled'),
 			array('check', 'image_cache_all'),
+			array('check', 'image_cache_nolink'),
 			array('int', 'image_cache_keep_days', 'postinput' => $txt['days_word'], 'subtext' => $txt['image_cache_keep_days_subnote']),
 		);
 

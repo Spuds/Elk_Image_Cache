@@ -82,6 +82,8 @@ class Image_Cache_Integrate
 	{
 		global $boardurl, $modSettings;
 
+		self::$js_load = self::$js_load || !empty($modSettings['image_cache_nolink']);
+
 		// Trickery for php5.3
 		$js_loaded =& self::$js_load;
 		$always = !empty($modSettings['image_cache_all']);
