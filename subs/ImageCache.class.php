@@ -10,7 +10,7 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 1.0.3
  *
  */
 
@@ -167,7 +167,7 @@ class Image_Cache extends AbstractModel
 		$extension = pathinfo($this->data, PATHINFO_EXTENSION) === 'png' ? 3 : 2;
 
 		// Create an image for the cache, resize if needed
-		$this->success = resizeImageFile($this->data, $this->destination, $this->width, $this->height, $extension);
+		$this->success = resizeImageFile($this->data, $this->destination, $this->width, $this->height, $extension, false, false);
 
 		// Log success or failure
 		$this->_actOnResult();
