@@ -6,7 +6,7 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2017 Spuds
+ * @copyright (c) 2021 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
@@ -22,18 +22,25 @@ class Elk_Proxy
 {
 	/** @var bool If they need to bypass the refer check */
 	public $_overrideReferrer = false;
+
 	/** @var HttpReq Holds instance of HttpReq object */
 	protected $_req;
+
 	/** @var string */
 	private $_boardurl = '';
+
 	/** @var string filename to send */
 	private $_fileName = '';
+
 	/** @var int size of the file */
 	private $_fileSize = 0;
+
 	/** @var string image etag */
 	private $_eTag;
+
 	/** @var mixed|string the image requested */
 	private $_image = '';
+
 	/** @var mixed|string the hash for the image */
 	private $_hash = '';
 
@@ -240,7 +247,7 @@ class Elk_Proxy
 	 * Files being requested should only come from this site
 	 *
 	 * - Should we get a HTTP_REFERER then validate its correct.
-	 * - Can't depend on this to always be enforces as there are many reasons HTTP_REFERER
+	 * - Can't depend on this to always be enforced as there are many reasons HTTP_REFERER
 	 * will be empty.
 	 *
 	 * @return bool

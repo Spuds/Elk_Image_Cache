@@ -8,14 +8,16 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2017 Spuds
+ * @copyright (c) 2021 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.3
+ * @version 1.0.5
  *
  */
+
+use BBC\Codes;
 
 /**
  * Class Image_Cache_Integrate
@@ -171,7 +173,7 @@ class Image_Cache_Integrate
 		$parseImg = parse_url($imageurl);
 
 		// No need if its already on this site (like uploaded avatars)
-		if ($parseImg['host'] === $parseBoard['host'])
+		if (empty($parseImg) || $parseImg['host'] === $parseBoard['host'])
 		{
 			return false;
 		}
@@ -181,16 +183,15 @@ class Image_Cache_Integrate
 		{
 			return false;
 		}
-		else
-		{
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
 	 * Replaces the href from $avatar with the proxy if needed.
 	 *
 	 * @param array $avatar
+	 * @return bool
 	 */
 	public static function integrate_avatar(&$avatar)
 	{
@@ -202,11 +203,16 @@ class Image_Cache_Integrate
 		{
 			return false;
 		}
-		elseif (self::cacheNeedsImage($boardurl, $avatar['href'], $always))
+
+		if (self::cacheNeedsImage($boardurl, $avatar['href'], $always))
 		{
 			$proxy_href = self::proxifyImage($avatar['href']);
 			$avatar['image'] = str_replace($avatar['href'], $proxy_href, $avatar['image']);
+			$avatar['href'] = $proxy_href;
+			$avatar['url'] = $proxy_href;
 		}
+
+		return true;
 	}
 
 	/**
@@ -226,44 +232,44 @@ class Image_Cache_Integrate
 		// Add Image Cache codes
 		$codes = array_merge($codes, array(
 			array(
-				\BBC\Codes::ATTR_TAG => 'img',
-				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
-				\BBC\Codes::ATTR_PARAM => array(
+				Codes::ATTR_TAG => 'img',
+				Codes::ATTR_TYPE => Codes::TYPE_UNPARSED_CONTENT,
+				Codes::ATTR_PARAM => array(
 					'width' => array(
-						\BBC\Codes::PARAM_ATTR_VALUE => 'width:100%;max-width:$1px;',
-						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+						Codes::PARAM_ATTR_VALUE => 'width:100%;max-width:$1px;',
+						Codes::PARAM_ATTR_MATCH => '(\d+)',
+						Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 					'height' => array(
-						\BBC\Codes::PARAM_ATTR_VALUE => 'max-height:$1px;',
-						\BBC\Codes::PARAM_ATTR_MATCH => '(\d+)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+						Codes::PARAM_ATTR_VALUE => 'max-height:$1px;',
+						Codes::PARAM_ATTR_MATCH => '(\d+)',
+						Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 					'title' => array(
-						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+						Codes::PARAM_ATTR_MATCH => '(.+?)',
+						Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 					'alt' => array(
-						\BBC\Codes::PARAM_ATTR_MATCH => '(.+?)',
-						\BBC\Codes::PARAM_ATTR_OPTIONAL => true,
+						Codes::PARAM_ATTR_MATCH => '(.+?)',
+						Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 				),
-				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
-				\BBC\Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
-				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
-				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
-				\BBC\Codes::ATTR_AUTOLINK => false,
-				\BBC\Codes::ATTR_LENGTH => 3,
+				Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
+				Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
+				Codes::ATTR_DISABLED_CONTENT => '($1)',
+				Codes::ATTR_BLOCK_LEVEL => false,
+				Codes::ATTR_AUTOLINK => false,
+				Codes::ATTR_LENGTH => 3,
 			),
 			array(
-				\BBC\Codes::ATTR_TAG => 'img',
-				\BBC\Codes::ATTR_TYPE => \BBC\Codes::TYPE_UNPARSED_CONTENT,
-				\BBC\Codes::ATTR_CONTENT => '<img src="$1" alt="" class="bbc_img" />',
-				\BBC\Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
-				\BBC\Codes::ATTR_DISABLED_CONTENT => '($1)',
-				\BBC\Codes::ATTR_BLOCK_LEVEL => false,
-				\BBC\Codes::ATTR_AUTOLINK => false,
-				\BBC\Codes::ATTR_LENGTH => 3,
+				Codes::ATTR_TAG => 'img',
+				Codes::ATTR_TYPE => Codes::TYPE_UNPARSED_CONTENT,
+				Codes::ATTR_CONTENT => '<img src="$1" alt="" class="bbc_img" />',
+				Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
+				Codes::ATTR_DISABLED_CONTENT => '($1)',
+				Codes::ATTR_BLOCK_LEVEL => false,
+				Codes::ATTR_AUTOLINK => false,
+				Codes::ATTR_LENGTH => 3,
 			)
 		));
 	}

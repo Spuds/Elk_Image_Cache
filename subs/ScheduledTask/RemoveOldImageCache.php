@@ -5,7 +5,7 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2017 Spuds
+ * @copyright (c) 2021 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
@@ -49,14 +49,17 @@ class Remove_Old_Image_Cache implements Scheduled_Task_Interface
 		$pruneDate = time() - ($modSettings['image_cache_keep_days'] * 86400);
 
 		// All files that are older than pruneDate
-		$files = $db->fetchQuery('
+		$files = $db->fetchQueryCallback('
 			SELECT 
 				filename
 			FROM  {db_prefix}image_cache
 			WHERE log_time < {int:prune_time}',
 			array(
 				'prune_time' => $pruneDate,
-			)
+			),
+			function ($row) {
+				return $row['filename'];
+			}
 		);
 
 		// Remove the files

@@ -9,7 +9,7 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2017 Spuds
+ * @copyright (c) 2021 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.

@@ -8,17 +8,17 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 1.0.1
  *
  */
 
 $(function() {
 	$('.bbc_img').each(function () {
-		var $img = $(this),
+		let $img = $(this),
 			relattr = $img.attr('rel');
 
 		if (relattr === 'cached') {
-			var $a = $('<span class="cached_img"></span>'),
+			let $a = $('<span class="cached_img"></span>'),
 				$warn = $('<span class="infobox"><a class="external"></a></span>');
 
 			$warn.find('.external').attr('target', '_blank').attr('href', $img.data('url')).text($img.data('warn'));
