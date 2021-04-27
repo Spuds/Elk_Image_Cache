@@ -49,4 +49,5 @@ if (!empty($modSettings['admin_features']))
 {
 	$setting_changes['admin_features'] = str_replace(',ic', '', $modSettings['admin_features']);
 }
+
 updateSettings($setting_changes);
