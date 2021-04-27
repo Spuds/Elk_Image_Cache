@@ -32,6 +32,9 @@ class Elk_Proxy
 	/** @var string filename to send */
 	private $_fileName = '';
 
+	/** @var string filename to send */
+	private $_fileExt = 'jpeg';
+
 	/** @var int size of the file */
 	private $_fileSize = 0;
 
@@ -71,6 +74,8 @@ class Elk_Proxy
 		{
 			$this->_image = urldecode($this->_req->getQuery('image', 'trim', 'none'));
 			$this->_hash = $this->_req->getQuery('hash', 'trim', '');
+			$this->_fileExt = strtolower(pathinfo($this->_image, PATHINFO_EXTENSION));
+			$this->_fileExt = in_array($this->_fileExt, ['jpg', 'jpeg']) ? 'jpeg' : 'png';
 			$this->_fileName = CACHEDIR . '/img_cache_' . hash_hmac('md5', $this->_image, $modSettings['imagecache_sauce']);
 		}
 	}
@@ -155,7 +160,7 @@ class Elk_Proxy
 		header('Accept-Ranges: bytes');
 		header('Connection: close');
 		header('ETag: ' . $this->_eTag);
-		header('Content-Type: image/png');
+		header('Content-Type: image/' . $this->_fileExt);
 
 		$disposition = 'inline';
 		$fileName = str_replace('"', '', $this->_fileName);
@@ -167,7 +172,7 @@ class Elk_Proxy
 			$altName = "; filename*=UTF-8''" . rawurlencode($fileName);
 		}
 
-		header('Content-Disposition',$disposition . '; filename="' . $fileName . '"' . $altName);
+		header('Content-Disposition: ' . $disposition . '; filename="' . $fileName . '"' . $altName);
 		header('Cache-Control: max-age=' . (525600 * 60) . ', private');
 		header('Content-Length: ' . $this->_fileSize);
 	}
