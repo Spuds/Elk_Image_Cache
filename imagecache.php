@@ -11,7 +11,7 @@
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.3
+ * @version 1.0.5
  *
  */
 
@@ -158,25 +158,16 @@ class Elk_Proxy
 		header('Content-Type: image/png');
 
 		$disposition = 'inline';
+		$fileName = str_replace('"', '', $this->_fileName);
 
-		// Different browsers like different standards...
-		if (isBrowser('firefox'))
+		// Send as UTF-8 if the name requires that
+		$altName = '';
+		if (preg_match('~[\x80-\xFF]~', $fileName))
 		{
-			header('Content-Disposition: ' . $disposition . '; filename*=UTF-8\'\'' . rawurlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName)));
-		}
-		elseif (isBrowser('opera'))
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName) . '"');
-		}
-		elseif (isBrowser('ie'))
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . urlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $this->_fileName)) . '"');
-		}
-		else
-		{
-			header('Content-Disposition: ' . $disposition . '; filename="' . $this->_fileName . '"');
+			$altName = "; filename*=UTF-8''" . rawurlencode($fileName);
 		}
 
+		header('Content-Disposition',$disposition . '; filename="' . $fileName . '"' . $altName);
 		header('Cache-Control: max-age=' . (525600 * 60) . ', private');
 		header('Content-Length: ' . $this->_fileSize);
 	}
