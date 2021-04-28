@@ -163,7 +163,7 @@ class Elk_Proxy
 		header('Content-Type: image/' . $this->_fileExt);
 
 		$disposition = 'inline';
-		$fileName = str_replace('"', '', $this->_fileName);
+		$fileName = str_replace('"', '', basename($this->_image));
 
 		// Send as UTF-8 if the name requires that
 		$altName = '';
