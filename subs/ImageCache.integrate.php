@@ -153,7 +153,7 @@ class Image_Cache_Integrate
 			loadLanguage('ImageCache');
 		}
 
-		return $boardurl . '/imagecache.php?image=' . urlencode($imageUrl) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($imageUrl);
+		return $boardurl . '/imagecache.php?image=' . urlencode($imageUrl) . '&hash=' . $proxy->getImageCacheHash() . '" rel="cached" data-hash="' . $proxy->getImageCacheHash() . '" data-warn="' . Util::htmlspecialchars($txt['image_cache_warn_ext']) . '" data-url="' . Util::htmlspecialchars($imageUrl);
 	}
 
 	/**
