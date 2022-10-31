@@ -8,7 +8,7 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2022 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
@@ -21,7 +21,7 @@
  * Class ImageCache_Admin_Module
  *
  * - Adds the image cache admin menu when its core feature is enabled
- * - All modules under the modules directory are discovered by the system
+ * - All modules under the 'modules' directory are discovered by the system
  * and their static hooks method is called.
  */
 class ImageCache_Admin_Module implements ElkArte\sources\modules\Module_Interface
@@ -47,7 +47,7 @@ class ImageCache_Admin_Module implements ElkArte\sources\modules\Module_Interfac
 	/**
 	 * Used to add the ImageCache entry to the admin menu.
 	 *
-	 * @param mixed[] $admin_areas The admin menu array
+	 * @param array $admin_areas The admin menu array
 	 */
 	public function addMenu(&$admin_areas)
 	{
@@ -63,7 +63,7 @@ class ImageCache_Admin_Module implements ElkArte\sources\modules\Module_Interfac
 			'icon' => 'transparent.png',
 			'class' => 'admin_img_logs',
 			'permission' => array('admin_forum'),
-			'enabled' => in_array('ic', $context['admin_features']),
+			'enabled' => in_array('ic', $context['admin_features'], true),
 		);
 	}
 
@@ -72,7 +72,7 @@ class ImageCache_Admin_Module implements ElkArte\sources\modules\Module_Interfac
 	 *
 	 * @param string[] $language_files
 	 * @param string[] $include_files
-	 * @param mixed[] $settings_search
+	 * @param array $settings_search
 	 */
 	public function addSearch(&$language_files, &$include_files, &$settings_search)
 	{

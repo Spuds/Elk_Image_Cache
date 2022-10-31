@@ -9,7 +9,7 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2022 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
@@ -50,7 +50,7 @@ class ManageImageCacheModule_Controller extends Action_Controller
 		// Action control
 		$action = new Action('manage_imagecache');
 
-		// By default we want to manage settings, call integrate_sa_manage_imagecache
+		// By default, we want to manage settings, call integrate_sa_manage_imagecache
 		$subAction = $action->initialize($subActions, 'settings');
 
 		// Final bits
@@ -65,7 +65,7 @@ class ManageImageCacheModule_Controller extends Action_Controller
 	 *
 	 * - Called statically from the CoreFeatures Controller
 	 *
-	 * @param mixed[] $core_features The core features array
+	 * @param array $core_features The core features array
 	 */
 	public static function addCoreFeature(&$core_features)
 	{
