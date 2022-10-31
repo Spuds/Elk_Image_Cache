@@ -4,16 +4,16 @@
  * Provides a simple image cache, intended for serving http images over https.
  *
  * For proper auto detection, this file must be located in SUBSDIR and
- * follow naming conventions XxxYYY.integrate => Xxx_Yyy_Integrate
+ * follow naming conventions XxxYyy.integrate => Xxx_Yyy_Integrate
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2022 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.5
+ * @version 1.0.6
  *
  */
 
@@ -24,10 +24,11 @@ use BBC\Codes;
  *
  * - For proper auto detection, this file must be located in SUBSDIR and named xxx.integrate
  * - The class must be xxx_Integrate
- * - collection of static methods
+ * - Collection of static methods
  */
 class Image_Cache_Integrate
 {
+	/** @var bool if js has already been loaded */
 	static public $js_load = false;
 
 	/**
@@ -91,7 +92,7 @@ class Image_Cache_Integrate
 		$always = !empty($modSettings['image_cache_all']);
 
 		// Return a closure function for the bbc code
-		return function (&$tag, &$data, $disabled) use ($boardurl, &$js_loaded, $always)
+		return static function (&$tag, &$data, $disabled) use ($boardurl, &$js_loaded, $always)
 		{
 			$doCache = self::cacheNeedsImage($boardurl, $data, $always);
 
@@ -133,18 +134,14 @@ class Image_Cache_Integrate
 		{
 			$proxy->updateImageCacheHitDate();
 		}
+		elseif ($cache_hit === false)
+		{
+			$proxy->createCacheImage();
+		}
+		// A numeric means we have tried and failed
 		else
 		{
-			// A false result means we never tried to get this file
-			if ($cache_hit === false)
-			{
-				$proxy->createCacheImage();
-			}
-			// A numeric means we have tried and failed
-			else
-			{
-				$proxy->retryCreateImageCache();
-			}
+			$proxy->retryCreateImageCache();
 		}
 
 		// Make sure we have the language loaded
@@ -216,11 +213,14 @@ class Image_Cache_Integrate
 	}
 
 	/**
-	 * $codes will be populated with what other addons, modules etc have added to the system
+	 * $codes will be populated with what other addons, modules etc. have added to the system
 	 * but will not contain the default codes.
 	 *
 	 * Codes added here will parse before any default ones effectively over writing them as
 	 * default codes are appended to this array.
+	 *
+	 * Your alternative is to use bbc_codes_parsing where you could change the default codes directly.  Problem
+	 * is that you need to be aware of other addons tinkering with the same codes.
 	 *
 	 * @param array $codes
 	 */
@@ -254,7 +254,7 @@ class Image_Cache_Integrate
 						Codes::PARAM_ATTR_OPTIONAL => true,
 					),
 				),
-				Codes::ATTR_CONTENT => '<img src="$1" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
+				Codes::ATTR_CONTENT => '<img src="$1" title="{title}" alt="{alt}" style="{width}{height}" class="bbc_img resized" />',
 				Codes::ATTR_VALIDATE => self::bbcValidateImageNeedsCache(),
 				Codes::ATTR_DISABLED_CONTENT => '($1)',
 				Codes::ATTR_BLOCK_LEVEL => false,
