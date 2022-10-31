@@ -5,12 +5,12 @@
  *
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2022 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.3
+ * @version 1.0.6
  *
  */
 
@@ -24,21 +24,38 @@
  */
 class Image_Cache extends AbstractModel
 {
-	public $height = 480;
-	public $width = 640;
+	/** @var int size of locally saved image */
+	public $height = 768;
+
+	/** @var int size of locally saved image */
+	public $width = 1024;
+
+	/** @var int number of times to retry a failed fetch */
 	public $max_retry = 10;
+
+	/** @var string where to save the fetched image */
 	private $destination;
+
+	/** @var bool if the image was fetched */
 	private $success = false;
+
+	/** @var string file hash name to prevent direct access */
 	private $hash;
+
+	/** @var time for the log to determine next fetch attempt */
 	private $log_time;
+
+	/** @var int number of times the image has failed to be retrieved from remote site */
 	private $num_fail;
+
+	/** @var string image file contents */
 	private $data;
 
 	/**
 	 * Image_Cache constructor.
 	 *
 	 * @param Database|null $db
-	 * @param string   $file
+	 * @param string $file
 	 */
 	public function __construct($db = null, $file = '')
 	{
@@ -166,7 +183,7 @@ class Image_Cache extends AbstractModel
 		// Keep png's as png's, all others to jpg
 		$extension = pathinfo($this->data, PATHINFO_EXTENSION) === 'png' ? 3 : 2;
 
-		// Create an image for the cache, resize if needed
+		// Create a "lesser" image for the local cache
 		$this->success = resizeImageFile($this->data, $this->destination, $this->width, $this->height, $extension, false, false);
 
 		// Log success or failure
@@ -178,8 +195,9 @@ class Image_Cache extends AbstractModel
 	 */
 	private function _setImageDimensions()
 	{
-		$this->width = !empty($this->_modSettings['max_image_height']) ? $this->_modSettings['max_image_width'] : $this->width;
-		$this->height = !empty($this->_modSettings['max_image_height']) ? $this->_modSettings['max_image_height'] : $this->height;
+		// @todo ic_max_image_xxx are not exposed in acp
+		$this->width = !empty($this->_modSettings['ic_max_image_height']) ? $this->_modSettings['ic_max_image_width'] : $this->width;
+		$this->height = !empty($this->_modSettings['ic_max_image_height']) ? $this->_modSettings['ic_max_image_height'] : $this->height;
 	}
 
 	/**
@@ -213,7 +231,7 @@ class Image_Cache extends AbstractModel
 			);
 		}
 
-		// Add the line only if its the first time to fail
+		// Add the line only if this is the first time it fails
 		if ($this->success === false)
 		{
 			$this->_db->insert('ignore',
