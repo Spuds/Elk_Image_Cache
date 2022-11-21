@@ -181,7 +181,15 @@ class Image_Cache extends AbstractModel
 		$this->_setImageDimensions();
 
 		// Keep png's as png's, all others to jpg
-		$extension = pathinfo($this->data, PATHINFO_EXTENSION) === 'png' ? 3 : 2;
+		$extension = 2;
+		if (pathinfo($this->data, PATHINFO_EXTENSION) === 'gif')
+		{
+			$extension = 1;
+		}
+		elseif (pathinfo($this->data, PATHINFO_EXTENSION) === 'png')
+		{
+			$extension = 3;
+		}
 
 		// Create a "lesser" image for the local cache
 		$this->success = resizeImageFile($this->data, $this->destination, $this->width, $this->height, $extension, false, false);
