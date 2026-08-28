@@ -19,7 +19,7 @@
         <database>install.php</database>
         <code>settings.php</code>
 
-        <redirect url="$scripturl?action=admin;area=imagecacheconfig" timeout="5000" parsebbc="true">redirect</redirect>
+        <redirect url="$scripturl?action=admin;area=manageimagecache" timeout="5000" parsebbc="true">redirect</redirect>
 	</install>
 
 	<uninstall for="2.0 Beta 1 - 2.0.99">
