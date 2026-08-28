@@ -14,7 +14,7 @@ $txt['image_cache_desc'] = 'This will serve images embedded with [IMG] tags from
 $txt['image_cache_settings_description'] = 'Here you can set all settings involving the image cache and proxy.';
 
 $txt['maintain_imagecache'] = 'Empty the image cache';
-$txt['maintain_imagecache_info'] = 'This function will EMPTY the image cache should you need it to be cleared.';
+$txt['maintain_imagecache_info'] = 'This function will empty the image cache should you need it to be cleared.';
 
 $txt['core_settings_item_ic'] = 'Image Cache & Proxy';
 $txt['core_settings_item_ic_desc'] = 'This will serve images embedded with [IMG] tags from your domain through a proxy mechanism.  The remote image is saved to your cache directory and served from there.';

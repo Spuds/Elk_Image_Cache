@@ -135,16 +135,16 @@ class ManageImageCacheModule extends AbstractController
 		// Initialize it with our settings
 		$settingsForm->setConfigVars($this->_settings());
 
-		// Setup the template.
+		// Set up the template.
 		$context['page_title'] = $txt['image_cache_title'];
 		$context['sub_template'] = 'show_settings';
-		$context[$context['admin_menu_name']]['tab_data'] = array(
+		$context[$context['admin_menu_name']]['tab_data'] = [
 			'title' => $txt['image_cache_label'],
 			'help' => '',
 			'description' => $txt['image_cache_settings_description'],
-		);
+		];
 
-		// Saving them ?
+		// Saving them?
 		if (isset($this->_req->query->save))
 		{
 			checkSession();
@@ -184,7 +184,7 @@ class ManageImageCacheModule extends AbstractController
 		];
 
 		// Maybe an addon wants to add more settings.
-		call_integration_hook('integrate_modify_imagecache_settings', array(&$config_vars));
+		call_integration_hook('integrate_modify_imagecache_settings', [&$config_vars]);
 
 		return $config_vars;
 	}

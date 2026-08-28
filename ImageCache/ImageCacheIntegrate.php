@@ -46,7 +46,7 @@ class ImageCacheIntegrate
 	 *
 	 * The Hooks class makes static calls to ::register and ::settingsRegister for each class that
 	 * was saved with enableIntegration() (stored in $modSettings['autoload_integrate']).
-	 * $modSettings is updated during the install process to include the new integration
+	 * $modSettings is updated during install process to include the new integration
 	 *
 	 * @return array
 	 */
@@ -126,7 +126,7 @@ class ImageCacheIntegrate
 		Txt::load('ImageCache');
 
 		// Set a new admin area, manageimagecache, to add to config after addonsettings
-		$new_area['config'] = [
+		$new_area['addons'] = [
 			'manageimagecache' => [
 				'label' => $txt['image_cache_title'],
 				'controller' => 'ManageImageCacheModule',
@@ -188,6 +188,7 @@ class ImageCacheIntegrate
 				ManageImageCacheModule::updateScheduleTask();
 				updateSettings(['image_cache_enabled' => '']);
 				Hooks::instance()->disableIntegration('\Addons\ImageCache\ImageCacheIntegrate');
+
 				return ['disable_ic' => 1];
 			},
 		];
@@ -276,7 +277,7 @@ class ImageCacheIntegrate
 	 * @param string $imageurl
 	 * @param bool $always
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
 	protected static function cacheNeedsImage($boardurl, $imageurl, $always)
 	{
@@ -284,7 +285,7 @@ class ImageCacheIntegrate
 		$parseBoard = parse_url($boardurl);
 		$parseImg = parse_url($imageurl);
 
-		// No need if its already on this site (like uploaded avatars)
+		// No need if it's already on this site (like uploaded avatars)
 		if (empty($parseImg) || $parseImg['host'] === $parseBoard['host'])
 		{
 			return false;
@@ -328,10 +329,10 @@ class ImageCacheIntegrate
 	}
 
 	/**
-	 * $codes will be populated with what other addons, modules etc. have added to the system
+	 * $codes will be populated with what other addons, modules, etc. have added to the system
 	 * but will not contain the default codes.
 	 *
-	 * Codes added here will parse before any default ones effectively over writing them as
+	 * Codes added here will parse before any default ones effectively overwriting them as
 	 * default codes are appended to this array.
 	 *
 	 * Your alternative is to use bbc_codes_parsing where you could change the default codes directly.  Problem

@@ -14,6 +14,7 @@
         <require-dir name="themes" destination="BOARDDIR">Templates, CSS, Scripts</require-dir>
 
         <require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
+		<require-file name="RemoveOldImageCache.php" destination="ELKARTEDIR/ScheduledTasks/Tasks/">Scheduled Task</require-file>
 
         <database>install.php</database>
         <code>settings.php</code>
@@ -28,8 +29,9 @@
 		<remove-file name="THEMEDIR/css/imagecache.css" />
 		<remove-file name="THEMEDIR/scripts/imagecache.js" />
         <remove-file name="THEMEDIR/images/admin/feature_ic.png" />
+		<remove-file name="ELKARTEDIR/ScheduledTasks/Tasks/RemoveOldImageCache.php">Removing Scheduled Task</remove-file>
 
-        <remove-dir name="ADDONSDIR/ImageCache" />
+		<remove-dir name="ADDONSDIR/ImageCache" />
         <remove-dir name="LANGUAGEDIR/ImageCache" />
 	</uninstall>
 

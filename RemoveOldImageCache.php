@@ -14,7 +14,9 @@
  *
  */
 
-namespace ElkArte\sources\subs\ScheduledTask;
+namespace ElkArte\ScheduledTasks\Tasks;
+
+use ElkArte\Themes\ThemeLoader;
 
 /**
  * Remove cache files that are past their expiration data
@@ -23,7 +25,7 @@ namespace ElkArte\sources\subs\ScheduledTask;
  *
  * @package ScheduledTask
  */
-class Remove_Old_Image_Cache implements Scheduled_Task_Interface
+class RemoveOldImageCache implements ScheduledTaskInterface
 {
 	/**
 	 * Scheduled task for removing old image files from the cache
@@ -36,28 +38,29 @@ class Remove_Old_Image_Cache implements Scheduled_Task_Interface
 
 		$db = database();
 
-		// Keeping them forever I guess
+		// Keeping them forever, I guess
 		if (empty($modSettings['image_cache_keep_days']))
 		{
 			return true;
 		}
 
 		// We need this for language items
-		loadEssentialThemeData();
+		ThemeLoader::loadEssentialThemeData();
 
 		// Back up in time image_cache_keep_days
 		$pruneDate = time() - ($modSettings['image_cache_keep_days'] * 86400);
 
 		// All files that are older than pruneDate
-		$files = $db->fetchQueryCallback('
+		$files = $db->fetchQuery('
 			SELECT 
 				filename
 			FROM  {db_prefix}image_cache
 			WHERE log_time < {int:prune_time}',
-			array(
+			[
 				'prune_time' => $pruneDate,
-			),
-			function ($row) {
+			]
+		)->fetch_callback(
+			static function ($row) {
 				return $row['filename'];
 			}
 		);
@@ -74,9 +77,9 @@ class Remove_Old_Image_Cache implements Scheduled_Task_Interface
 			$db->query('', '
 			DELETE FROM {db_prefix}image_cache
 			WHERE filename IN ({array_string:files})',
-				array(
+				[
 					'files' => $files,
-				)
+				]
 			);
 		}
 

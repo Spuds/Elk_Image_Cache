@@ -19,7 +19,6 @@ namespace Addons\ImageCache\Controller;
 use ElkArte\AbstractModel;
 use ElkArte\Graphics\Image;
 use ElkArte\Helper\TokenHash;
-use ElkArte\Database\QueryInterface;
 
 /**
  * Class Image_Cache
@@ -75,7 +74,7 @@ class ImageCache extends AbstractModel
 	/**
 	 * Creates a hash code using the image name and our secret key
 	 *
-	 * - If no salt (secret key) has been set, creates a random one for use, and sets it
+	 * - If no salt (secret key) has been set, creates a random one for use and sets it
 	 * in modsettings for future use
 	 *
 	 * @return string
@@ -142,7 +141,7 @@ class ImageCache extends AbstractModel
 	 */
 	public function retryCreateImageCache()
 	{
-		// Time to give up ?
+		// Time to give up?
 		if ($this->num_fail > $this->max_retry)
 		{
 			return;
@@ -291,7 +290,7 @@ class ImageCache extends AbstractModel
 	 */
 	public function updateImageCacheHitDate()
 	{
-		// Its in the cache and has not been touched in at least an hour
+		// It's in the cache and has not been touched in at least an hour
 		if ($this->num_fail === true && $this->log_time + 3600 < time())
 		{
 			$this->_db->query('', '
