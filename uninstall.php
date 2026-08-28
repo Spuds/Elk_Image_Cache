@@ -3,19 +3,22 @@
 /**
  * @name ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2021-2025 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 2.0.0
  *
  */
 
 // If we have found SSI.php and we are outside of ELK, then we are running standalone.
-if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('ELK'))
+use Addons\ImageCache\Controller\ImageCache;
+use ElkArte\Hooks;
+
+if (file_exists(__DIR__ . '/SSI.php') && !defined('ELK'))
 {
-	require_once(dirname(__FILE__) . '/SSI.php');
+	require_once(__DIR__ . '/SSI.php');
 }
 elseif (!defined('ELK')) // If we are outside ELK and can't find SSI.php, then throw an error
 {
@@ -39,8 +42,7 @@ $db->query('', '
 	)
 );
 
-// Remove module hooks
-disableModules('image_cache', array('admin'));
+// Remove hooks
 Hooks::instance()->disableIntegration('Image_Cache_Integrate');
 
 // Remove enabled settings (core feature)

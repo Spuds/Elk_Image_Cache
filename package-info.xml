@@ -1,34 +1,36 @@
 <?xml version="1.0"?>
-<!DOCTYPE package-info SYSTEM "http://www.elkarte.net/site/package-info">
+<!DOCTYPE package-info SYSTEM "https://www.elkarte.net/site/package-info">
 <package-info xmlns="https://www.elkarte.net/site/package-info" xmlns:elk="https://www.elkarte.net/">
 	<name>ImageCache</name>
 	<id>spuds:imagecache</id>
 	<type>addon</type>
-	<version>1.0.6</version>
+	<version>2.0.0</version>
 
-	<install for="1.1 - 1.1.99">
-		<require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
-		<require-dir name="modules" destination="SOURCEDIR">Core feature interface</require-dir>
-		<require-dir name="admin" destination="SOURCEDIR">Admin panel controllers</require-dir>
-		<require-dir name="subs" destination="SOURCEDIR">Helpers</require-dir>
-		<require-dir name="themes" destination="BOARDDIR">Templates, CSS, Language</require-dir>
-		<database type="file">install.php</database>
-		<redirect url="index.php?action=admin;area=corefeatures" timeout="4000">redirect.txt</redirect>
+	<install for="2.0 Beta 1 - 2.0.99">
+        <readme type="inline">This will install the Image Cache Addon for Elkarte.</readme>
+
+        <require-dir name="ImageCache" destination="ADDONSDIR" />
+        <require-dir name="languages/ImageCache" destination="LANGUAGEDIR" />
+        <require-dir name="themes" destination="BOARDDIR">Templates, CSS, Scripts</require-dir>
+
+        <require-file name="imagecache.php" destination="BOARDDIR">Proxy to serve images</require-file>
+
+        <database>install.php</database>
+        <code>settings.php</code>
+
+        <redirect url="$scripturl?action=admin;area=imagecacheconfig" timeout="5000" parsebbc="true">redirect</redirect>
 	</install>
 
-	<uninstall for="1.1 - 1.1.99">
+	<uninstall for="2.0 Beta 1 - 2.0.99">
 		<hook reverse="true" hook="autoload_integrate" function="Image_Cache_Integrate" />
-		<code type="file">uninstall.php</code>
-		<remove-file name="ADMINDIR/ManageImageCacheModule.controller.php" />
-		<remove-file name="SOURCEDIR/modules/ImageCache/ImageCacheAdminModule.class.php" />
-		<remove-file name="SUBSDIR/ScheduledTask/RemoveOldImageCache.php" />
-		<remove-file name="SUBSDIR/ImageCache.class.php" />
-		<remove-file name="SUBSDIR/ImageCache.integrate.php" />
+		<code>uninstall.php</code>
 		<remove-file name="BOARDDIR/imagecache.php" />
-		<remove-file name="LANGUAGEDIR/english/ImageCache.english.php" />
 		<remove-file name="THEMEDIR/css/imagecache.css" />
 		<remove-file name="THEMEDIR/scripts/imagecache.js" />
-		<remove-file name="THEMEDIR/images/admin/feature_ic.png" />
+        <remove-file name="THEMEDIR/images/admin/feature_ic.png" />
+
+        <remove-dir name="ADDONSDIR/ImageCache" />
+        <remove-dir name="LANGUAGEDIR/ImageCache" />
 	</uninstall>
 
 </package-info>

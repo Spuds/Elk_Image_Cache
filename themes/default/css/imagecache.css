@@ -5,7 +5,7 @@
 .cached_img .infobox {
 	display: block;
 	margin: 0;
-	padding: 0;
+	padding: 0 !important;
 	background-image: none;
 	font-size: 0.8em;
 	line-height: 1.5em;

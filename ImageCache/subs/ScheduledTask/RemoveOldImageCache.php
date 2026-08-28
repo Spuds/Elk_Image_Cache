@@ -3,14 +3,14 @@
  * Schedule task interface to remove images in the cache that have not been accessed
  * in a given period of time
  *
- * @name ImageCache
+ * @package ImageCache
  * @author Spuds
- * @copyright (c) 2022 Spuds
+ * @copyright (c) 2022-2025 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
  * http://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.0
+ * @version 2.0.0
  *
  */
 

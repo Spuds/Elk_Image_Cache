@@ -3,16 +3,23 @@
 /**
  * Image cache proxy core functionality
  *
- * @name ImageCache
+ * @package ImageCache
  * @author Spuds
- * @copyright (c) 2022 Spuds
+ * @copyright (c) 2022-2025 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
- * http://mozilla.org/MPL/1.1/.
+ * https://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.6
+ * @version 2.0.0
  *
  */
+
+namespace Addons\ImageCache\Controller;
+
+use ElkArte\AbstractModel;
+use ElkArte\Graphics\Image;
+use ElkArte\Helper\TokenHash;
+use ElkArte\Database\QueryInterface;
 
 /**
  * Class Image_Cache
@@ -22,7 +29,7 @@
  * - AbstractModel provides $db ($this_db) and $modSettings ($this->_modSettings)
  * for use in the extended class
  */
-class Image_Cache extends AbstractModel
+class ImageCache extends AbstractModel
 {
 	/** @var int size of locally saved image */
 	public $height = 768;
@@ -42,24 +49,23 @@ class Image_Cache extends AbstractModel
 	/** @var string file hash name to prevent direct access */
 	private $hash;
 
-	/** @var time for the log to determine next fetch attempt */
+	/** @var int for the log to determine the next fetch attempt */
 	private $log_time;
 
 	/** @var int number of times the image has failed to be retrieved from remote site */
 	private $num_fail;
 
-	/** @var string image file contents */
+	/** @var string image file name to fetch from remote site */
 	private $data;
 
 	/**
 	 * Image_Cache constructor.
 	 *
-	 * @param Database|null $db
 	 * @param string $file
 	 */
-	public function __construct($db = null, $file = '')
+	public function __construct($file = '')
 	{
-		parent::__construct($db);
+		parent::__construct();
 
 		$this->data = $file;
 		$this->hash = $this->_imageCacheHash();
@@ -80,15 +86,17 @@ class Image_Cache extends AbstractModel
 		if (empty($this->_modSettings['imagecache_sauce']))
 		{
 			// Generate a 10 digit random hash.
-			$tokenizer = new Token_Hash();
+			$tokenizer = new TokenHash();
 			$imagecache_sauce = $tokenizer->generate_hash();
 
 			// Save it for all future uses
-			updateSettings(array('imagecache_sauce' => $imagecache_sauce));
+			updateSettings(['imagecache_sauce' => $imagecache_sauce]);
 			$this->_modSettings['imagecache_sauce'] = $imagecache_sauce;
 		}
 
-		return hash_hmac('md5', $this->data, $this->_modSettings['imagecache_sauce']);
+		//$tohash = parse_url($this->data, PHP_URL_PATH);
+
+		return hash_hmac('md5', urldecode($this->data), $this->_modSettings['imagecache_sauce']);
 	}
 
 	/**
@@ -107,20 +115,19 @@ class Image_Cache extends AbstractModel
 			 	filename, log_time, num_fail
 			FROM {db_prefix}image_cache
 			WHERE filename = {string:filename}',
-			array(
+			[
 				'filename' => $this->hash,
-			)
+			]
 		);
-		if ($this->_db->num_rows($request) == 0)
+		if ($request->num_rows() === 0)
 		{
 			$this->num_fail = false;
 		}
 		else
 		{
-			list(, $this->log_time, $this->num_fail) = $this->_db->fetch_row($request);
+			[, $this->log_time, $this->num_fail] = $request->fetch_row();
 			$this->num_fail = empty($this->num_fail) ? true : (int) $this->num_fail;
 		}
-		$this->_db->free_result($request);
 
 		return $this->num_fail;
 	}
@@ -144,26 +151,26 @@ class Image_Cache extends AbstractModel
 		// The more failures the longer we wait before the next attempt,
 		// 10 attempts ending 1 week out from initial failure, approx as
 		// 1min, 16min, 1.3hr, 4.2hr, 10.5hr, 21.6hr, 40hr, 2.8day, 4.5day, 1wk
-		$delay = pow($this->num_fail, 4) * 60;
+		$delay = ($this->num_fail ** 4) * 60;
 		$last_attempt = time() - $this->log_time;
 
 		// Time to try again
 		if ($last_attempt > $delay)
 		{
 			// Optimistic "locking" to try and prevent any race conditions
-			$this->_db->query('', '
+			$result = $this->_db->query('', '
 				UPDATE {db_prefix}image_cache
 				SET num_fail = num_fail + 1
 				WHERE filename = {string:filename}
 					AND num_fail = {int:num_fail}',
-				array(
+				[
 					'filename' => $this->hash,
 					'num_fail' => $this->num_fail
-				)
+				]
 			);
 
 			// Only if we have success in updating the fail count is the attempt "ours" to make
-			if ($this->_db->affected_rows() != 0)
+			if ($result->affected_rows() !== 0)
 			{
 				$this->createCacheImage();
 			}
@@ -175,24 +182,27 @@ class Image_Cache extends AbstractModel
 	 */
 	public function createCacheImage()
 	{
-		require_once(SUBSDIR . '/Graphics.subs.php');
-
 		// Constrain the image to fix to our maximums
 		$this->_setImageDimensions();
 
-		// Keep png's as png's, all others to jpg
-		$extension = 2;
+		// Keep png's and gifs as they are, all others to jpg
+		$extension = IMAGETYPE_JPEG;
 		if (pathinfo($this->data, PATHINFO_EXTENSION) === 'gif')
 		{
-			$extension = 1;
+			$extension = IMAGETYPE_GIF;
 		}
 		elseif (pathinfo($this->data, PATHINFO_EXTENSION) === 'png')
 		{
-			$extension = 3;
+			$extension = IMAGETYPE_PNG;
 		}
 
 		// Create a "lesser" image for the local cache
-		$this->success = resizeImageFile($this->data, $this->destination, $this->width, $this->height, $extension, false, false);
+		$image = new Image($this->data);
+		$this->success = $image->resizeImage($this->width, $this->height, false, false);
+		if ($this->success)
+		{
+			$image->saveImage($this->destination, $extension);
+		}
 
 		// Log success or failure
 		$this->_actOnResult();
@@ -204,8 +214,8 @@ class Image_Cache extends AbstractModel
 	private function _setImageDimensions()
 	{
 		// @todo ic_max_image_xxx are not exposed in acp
-		$this->width = !empty($this->_modSettings['ic_max_image_height']) ? $this->_modSettings['ic_max_image_width'] : $this->width;
-		$this->height = !empty($this->_modSettings['ic_max_image_height']) ? $this->_modSettings['ic_max_image_height'] : $this->height;
+		$this->width = !empty($this->_modSettings['ic_max_image_height']) ? (int) $this->_modSettings['ic_max_image_width'] : $this->width;
+		$this->height = !empty($this->_modSettings['ic_max_image_height']) ? (int) $this->_modSettings['ic_max_image_height'] : $this->height;
 	}
 
 	/**
@@ -233,20 +243,20 @@ class Image_Cache extends AbstractModel
 		{
 			$this->_db->insert('replace',
 				'{db_prefix}image_cache',
-				array('filename' => 'string', 'log_time' => 'int', 'num_fail' => 'int'),
-				array($this->hash, time(), 0),
-				array('filename')
+				['filename' => 'string', 'log_time' => 'int', 'num_fail' => 'int'],
+				[$this->hash, time(), 0],
+				['filename']
 			);
 		}
 
-		// Add the line only if this is the first time it fails
+		// Add the line only if this is the first time it failed
 		if ($this->success === false)
 		{
 			$this->_db->insert('ignore',
 				'{db_prefix}image_cache',
-				array('filename' => 'string', 'log_time' => 'int', 'num_fail' => 'int'),
-				array($this->hash, time(), 1),
-				array('filename')
+				['filename' => 'string', 'log_time' => 'int', 'num_fail' => 'int'],
+				[$this->hash, time(), 1],
+				['filename']
 			);
 		}
 	}
@@ -288,10 +298,10 @@ class Image_Cache extends AbstractModel
 				UPDATE {db_prefix}image_cache
 				SET log_time = {int:log_time}
 				WHERE filename = {string:filename}',
-				array(
+				[
 					'filename' => $this->hash,
 					'log_time' => time(),
-				)
+				]
 			);
 		}
 	}
@@ -306,7 +316,7 @@ class Image_Cache extends AbstractModel
 		// Remove '/img_cache_' files in our disk cache directory
 		try
 		{
-			$files = new GlobIterator(CACHEDIR . '/img_cache_*', FilesystemIterator::SKIP_DOTS);
+			$files = new \GlobIterator(CACHEDIR . '/img_cache_*', \FilesystemIterator::SKIP_DOTS);
 
 			foreach ($files as $file)
 			{
@@ -316,16 +326,14 @@ class Image_Cache extends AbstractModel
 				}
 			}
 		}
-		catch (UnexpectedValueException $e)
+		catch (\UnexpectedValueException $e)
 		{
 			// @todo
 		}
 
 		// Finish off by clearing the image_cache table of all entries
 		$this->_db->query('truncate_table', '
-			TRUNCATE {db_prefix}image_cache',
-			array(
-			)
+			TRUNCATE {db_prefix}image_cache'
 		);
 
 		clearstatcache();

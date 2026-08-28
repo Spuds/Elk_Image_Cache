@@ -1,27 +1,31 @@
 <?php
 
 /**
- * Simple proxy to output a cached image.  Primarily intended to allow
+ * Proxy to output a cached image.  Primarily intended to allow
  * viewing of http images on a https/ssl enabled ElkArte site
  *
- * @name ImageCache
+ * @package ImageCache
  * @author Spuds
- * @copyright (c) 2021 Spuds
+ * @copyright (c) 2021-2025 Spuds
  * @license This Source Code is subject to the terms of the Mozilla Public License
  * version 1.1 (the "License"). You can obtain a copy of the License at
- * http://mozilla.org/MPL/1.1/.
+ * https://mozilla.org/MPL/1.1/.
  *
- * @version 1.0.5
+ * @version 2.0.0
  *
  */
 
+use ElkArte\Helper\FileFunctions;
+use ElkArte\Helper\HttpReq;
+use ElkArte\Http\Headers;
+
 /**
- * Class Elk_Proxy
+ * Class ElkProxy
  */
-class Elk_Proxy
+class ElkProxy
 {
 	/** @var bool If they need to bypass the refer check */
-	public $_overrideReferrer = false;
+	public $_overrideReferrer = true;
 
 	/** @var HttpReq Holds instance of HttpReq object */
 	protected $_req;
@@ -48,25 +52,17 @@ class Elk_Proxy
 	private $_hash = '';
 
 	/**
-	 * Elk_Proxy constructor.
+	 * ElkProxy constructor.
 	 */
 	public function __construct()
 	{
 		global $boardurl, $modSettings;
 
-		// Let the Elk out of the barn, 1.1 and 1.1.1+
-		require_once(dirname(__FILE__) . '/bootstrap.php');
-		if (class_exists('Bootstrap'))
-		{
-			require_once(dirname(__FILE__) . '/SSI.php');
-		}
-		else
-		{
-			define('ELK', 'SSI');
-		}
+		// Let the Elk out of the barn
+		require_once(__DIR__ . '/bootstrap.php');
+		require_once(__DIR__ . '/SSI.php');
 
 		$this->_boardurl = $boardurl;
-
 		$this->_req = HttpReq::instance();
 
 		// Using the proxy, we need both the requested image and a hash
@@ -74,8 +70,10 @@ class Elk_Proxy
 		{
 			$this->_image = urldecode($this->_req->getQuery('image', 'trim', 'none'));
 			$this->_hash = $this->_req->getQuery('hash', 'trim', '');
-			$this->_fileExt = strtolower(pathinfo($this->_image, PATHINFO_EXTENSION));
-			$this->_fileExt = in_array($this->_fileExt, ['jpg', 'jpeg']) ? 'jpeg' : 'png';
+			// Strip query/fragment before determining extension
+			$image = parse_url($this->_image, PHP_URL_PATH);
+			$this->_fileExt = strtolower(pathinfo($image, PATHINFO_EXTENSION));
+			$this->_fileExt = in_array($this->_fileExt, ['jpg', 'jpeg']) ? 'jpeg' : $this->_fileExt;
 			$this->_fileName = CACHEDIR . '/img_cache_' . hash_hmac('md5', $this->_image, $modSettings['imagecache_sauce']);
 		}
 	}
@@ -85,16 +83,15 @@ class Elk_Proxy
 	 */
 	public function sendImage()
 	{
-		// This is done to clear any output that was made before now.
+		// This is done to clear any output made before now.
 		while (ob_get_level() > 0)
 		{
 			@ob_end_clean();
 		}
 
-		$this->_fileSize = @filesize($this->_fileName);
+		$this->_fileSize = FileFunctions::instance()->fileSize($this->_fileName);
 
 		ob_start();
-		header('Content-Encoding: none');
 
 		// If it hasn't been modified, then you already have it
 		$this->_checkModifiedSince();
@@ -118,15 +115,19 @@ class Elk_Proxy
 	{
 		// If it hasn't been modified since the last time this attachment was retrieved,
 		// there's no need to send it again.
-		if (!empty($this->_req->server->HTTP_IF_MODIFIED_SINCE))
+		if (!empty($_SERVER['HTTP_IF_MODIFIED_SINCE']))
 		{
-			list ($modified_since) = explode(';', $_SERVER['HTTP_IF_MODIFIED_SINCE']);
+			[$modified_since] = explode(';', $_SERVER['HTTP_IF_MODIFIED_SINCE']);
 			if (strtotime($modified_since) >= filemtime($this->_fileName))
 			{
 				@ob_end_clean();
 
 				// Answer the question - no, it hasn't been modified ;).
-				header('HTTP/1.1 304 Not Modified');
+				$headers = Headers::instance();
+				$headers
+					->removeHeader('all')
+					->httpCode(304)
+					->sendHeaders();
 				exit(0);
 			}
 		}
@@ -139,12 +140,14 @@ class Elk_Proxy
 	{
 		// Check whether the ETag was sent back, and cache based on that...
 		$this->_eTag = '"' . substr($this->_fileName . filemtime($this->_fileName), 0, 64) . '"';
-		if (!empty($this->_req->server->HTTP_IF_NONE_MATCH) &&
-			strpos($this->_req->server->HTTP_IF_NONE_MATCH, $this->_eTag) !== false)
+		if (!empty($_SERVER['HTTP_IF_NONE_MATCH']) && strpos($_SERVER['HTTP_IF_NONE_MATCH'], $this->_eTag) !== false)
 		{
 			@ob_end_clean();
-
-			header('HTTP/1.1 304 Not Modified');
+			$headers = Headers::instance();
+			$headers
+				->removeHeader('all')
+				->httpCode(304)
+				->sendHeaders();
 			exit(0);
 		}
 	}
@@ -155,26 +158,21 @@ class Elk_Proxy
 	private function _sendHeaders()
 	{
 		// Send the attachment headers.
-		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 525600 * 60) . ' GMT');
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($this->_fileName)) . ' GMT');
-		header('Accept-Ranges: bytes');
-		header('Connection: close');
-		header('ETag: ' . $this->_eTag);
-		header('Content-Type: image/' . $this->_fileExt);
+		$headers = Headers::instance();
+		$headers
+			->header('Expires', gmdate('D, d M Y H:i:s', time() + 525600 * 60) . ' GMT')
+			->header('Last-Modified', gmdate('D, d M Y H:i:s', filemtime($this->_fileName)) . ' GMT')
+			->header('Accept-Ranges', 'bytes')
+			->header('Connection', 'close')
+			->header('ETag', $this->_eTag)
+			->header('Content-Type', 'image/' . $this->_fileExt);
 
-		$disposition = 'inline';
-		$fileName = str_replace('"', '', basename($this->_image));
+		$headers->setAttachmentFileParams($this->_fileExt, $this->_fileName, 'inline');
 
-		// Send as UTF-8 if the name requires that
-		$altName = '';
-		if (preg_match('~[\x80-\xFF]~', $fileName))
-		{
-			$altName = "; filename*=UTF-8''" . rawurlencode($fileName);
-		}
-
-		header('Content-Disposition: ' . $disposition . '; filename="' . $fileName . '"' . $altName);
-		header('Cache-Control: max-age=' . (525600 * 60) . ', private');
-		header('Content-Length: ' . $this->_fileSize);
+		// Set the content length, since it is an image we don't compress
+		$headers
+			->header('Content-Length', $this->_fileSize)
+			->sendHeaders();
 	}
 
 	/**
@@ -199,8 +197,8 @@ class Elk_Proxy
 			}
 			fclose($fp);
 		}
-		// Small files try readfile() first, failing that use file get contents
-		elseif (@readfile($this->_fileName) === null)
+		// Small files use file get contents
+		else
 		{
 			echo file_get_contents($this->_fileName);
 		}
@@ -253,7 +251,7 @@ class Elk_Proxy
 		$is_allowed = true;
 
 		// If we have a HTTP_REFERER header, we make sure its from us
-		$referer = (isset($this->_req->server->HTTP_REFERER)) ? $this->_req->server->HTTP_REFERER : false;
+		$referer = $this->_req->server->HTTP_REFERER ?? false;
 		if (!empty($referer))
 		{
 			// It should be from our server
@@ -276,7 +274,7 @@ class Elk_Proxy
 }
 
 // Send a cached image file
-$proxy = new Elk_Proxy();
+$proxy = new ElkProxy();
 if ($proxy->isValidRequest())
 {
 	$proxy->sendImage();
