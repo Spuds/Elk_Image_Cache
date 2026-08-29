@@ -32,7 +32,7 @@ $updates = array(
 updateSettings($updates);
 
 // Enable the core feature by default on install
-Hooks::instance()->enableIntegration('Image_Cache_Integrate');
+Hooks::instance()->enableIntegration('\Addons\ImageCache\ImageCacheIntegrate');
 
 if (ELK === 'SSI')
 {

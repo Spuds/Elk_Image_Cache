@@ -43,7 +43,7 @@ $db->query('', '
 );
 
 // Remove hooks
-Hooks::instance()->disableIntegration('Image_Cache_Integrate');
+Hooks::instance()->disableIntegration('\Addons\ImageCache\ImageCacheIntegrate');
 
 // Remove enabled settings (core feature)
 $setting_changes['image_cache_enabled'] = 0;
