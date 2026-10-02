@@ -93,8 +93,6 @@ class ImageCache extends AbstractModel
 			$this->_modSettings['imagecache_sauce'] = $imagecache_sauce;
 		}
 
-		//$tohash = parse_url($this->data, PHP_URL_PATH);
-
 		return hash_hmac('md5', urldecode($this->data), $this->_modSettings['imagecache_sauce']);
 	}
 
